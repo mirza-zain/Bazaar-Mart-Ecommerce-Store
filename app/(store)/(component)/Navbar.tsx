@@ -7,7 +7,6 @@ import { useState, useEffect } from "react";
 const navLinks = [
   { name: "Home", href: "/" },
   { name: "Shop", href: "/" },
-  { name: "Products", href: "/" },
   { name: "Contact", href: "/" },
   { name: "Track", href: "/" },
 ];
@@ -27,10 +26,10 @@ export default function Navbar() {
   }, [menuOpen]);
 
   return (
-    <nav className="relative w-full py-5 flex justify-between items-center px-5 z-50 bg-white">
+    <nav className="relative w-full py-5 flex justify-between items-center px-5 z-50 bg-white border-b">
       <div className="md:mx-5">
         <Link href="/">
-          <h2 className="text-4xl font-medium text-center font-[gilam]">Bazaario</h2>
+          <h2 className="text-4xl font-semibold text-center">Bazaar Mart</h2>
         </Link>
       </div>
 
