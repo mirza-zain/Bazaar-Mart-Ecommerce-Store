@@ -28,7 +28,7 @@ export default function ScreenCategory() {
         {items.map(item => (
           <Link
             key={item.id}
-            href="/"
+            href={`/products?category=${item.category}`}
             className="flex items-center justify-center gap-4 py-8 px-6 bg-slate-100 rounded-xl border border-slate-200 hover:bg-black hover:text-white transition-all duration-300 ease-in-out text-xl font-medium text-center"
           >
             {item.icon}

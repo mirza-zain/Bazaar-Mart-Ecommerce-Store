@@ -15,7 +15,7 @@ export default function BottomBanner() {
             Modern Fashion for a Brighter Tomorrow
           </p>
           <Link
-            href="/"
+            href="/products"
             className="group inline-flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-4 bg-black text-white rounded-xl text-base sm:text-lg font-semibold hover:bg-neutral-800 transition-all duration-300 shadow-sm"
           >
             <span>Shop Now</span>

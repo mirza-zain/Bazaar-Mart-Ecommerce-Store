@@ -1,6 +1,5 @@
-import { Headset, Lock, RotateCcw, Truck } from 'lucide-react';
-import Link from 'next/link';
-import React from 'react';
+import { Headset, Lock, RotateCcw, Truck } from "lucide-react";
+import React from "react";
 
 export default function SupportBanner() {
   const supportItems = [
@@ -8,47 +7,48 @@ export default function SupportBanner() {
       id: 1,
       title: "Free Shipping",
       subTitle: "On orders over PKR 8000",
-      icon: <Truck size={32} />,
+      icon: <Truck className="w-6 h-6 md:w-8 md:h-8" />,
     },
     {
       id: 2,
       title: "Secure Payments",
       subTitle: "100% secure checkout",
-      icon: <Lock size={32} />,
+      icon: <Lock className="w-6 h-6 md:w-8 md:h-8" />,
     },
     {
       id: 3,
       title: "Easy Returns",
       subTitle: "30-days return policy",
-      icon: <RotateCcw size={32} />,
+      icon: <RotateCcw className="w-6 h-6 md:w-8 md:h-8" />,
     },
     {
       id: 4,
       title: "24/7 Support",
       subTitle: "Always here to help",
-      icon: <Headset size={32} />,
+      icon: <Headset className="w-6 h-6 md:w-8 md:h-8" />,
     },
   ];
 
   return (
-    <div className="w-full px-6 md:px-12 py-2 md:py-10 mb-10">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-6 max-w-7xl mx-auto">
+    <div className="w-full border-y border-neutral-200/80 bg-neutral-50/60 py-8 md:py-10 my-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
         {supportItems.map((item) => (
-          <Link
-            href="/"
+          <div
             key={item.id}
-            className="flex items-center justify-start sm:justify-center gap-4 hover:opacity-75 transition-opacity"
+            className="flex flex-col sm:flex-row items-center sm:items-start lg:items-center text-center sm:text-left gap-2.5 sm:gap-4"
           >
-            <div className="shrink-0 text-black">{item.icon}</div>
+            <div className="shrink-0 text-neutral-900">
+              {item.icon}
+            </div>
             <div>
-              <h3 className="text-base md:text-lg font-semibold text-black leading-snug">
+              <h3 className="text-sm sm:text-base md:text-lg font-semibold text-neutral-900 leading-snug">
                 {item.title}
               </h3>
-              <p className="text-xs md:text-sm text-gray-500 leading-snug">
+              <p className="text-xs sm:text-sm text-neutral-500 mt-0.5 leading-snug">
                 {item.subTitle}
               </p>
             </div>
-          </Link>
+          </div>
         ))}
       </div>
     </div>
