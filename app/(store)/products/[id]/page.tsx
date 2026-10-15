@@ -2,11 +2,34 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { ArrowLeft, Check, ShieldCheck, Truck, RotateCcw } from "lucide-react";
 import { getProductById } from "@/app/lib/actions/store";
+import ProductPurchaseActions from "./(components)/ProductPurchaseActions";
 
 interface Props {
   params: Promise<{ id: string }>;
+}
+
+export const instant = false;
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const resolvedParams = await params;
+  const productId = parseInt(resolvedParams.id, 10);
+  if (isNaN(productId)) return { title: "Product Not Found" };
+
+  const product = await getProductById(productId);
+  if (!product) return { title: "Product Not Found" };
+
+  return {
+    title: product.name,
+    description: product.description.slice(0, 160),
+    openGraph: {
+      title: `${product.name} | Bazaario`,
+      description: product.description.slice(0, 160),
+      images: product.image ? [{ url: product.image }] : [],
+    },
+  };
 }
 
 export default async function ProductDetailPage({ params }: Props) {
@@ -103,41 +126,16 @@ export default async function ProductDetailPage({ params }: Props) {
             </p>
           </div>
 
-          {/* Size / Variants if available */}
-          {product.variants && product.variants.length > 0 && (
-            <div>
-              <label className="block text-xs font-semibold uppercase text-neutral-700 mb-2">
-                Select Variant
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {product.variants.map((v, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    className="px-4 py-2 border border-neutral-200 rounded-xl text-sm font-medium hover:border-black transition focus:border-black focus:bg-black focus:text-white"
-                  >
-                    {v.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 pt-2">
-            <Link
-              href="/cart"
-              className="flex-1 py-4 px-6 bg-black text-white text-base font-semibold rounded-2xl hover:bg-neutral-800 transition shadow-sm text-center cursor-pointer"
-            >
-              Add to Cart
-            </Link>
-            <Link
-              href="/checkout"
-              className="flex-1 py-4 px-6 border-2 border-neutral-900 text-neutral-900 text-base font-semibold rounded-2xl hover:bg-neutral-100 transition text-center cursor-pointer"
-            >
-              Buy with Cash on Delivery
-            </Link>
-          </div>
+          {/* Purchase Actions (Variant, Quantity, Add to Bag, Buy Now) */}
+          <ProductPurchaseActions
+            productId={product.id}
+            name={product.name}
+            category={product.category}
+            price={Number(product.price)}
+            stock={Number(product.stock)}
+            image={product.image || "/images/img1.jpg"}
+            variants={product.variants || []}
+          />
 
           {/* Trust Guarantees */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-6 border-t border-neutral-100 text-xs text-neutral-600">

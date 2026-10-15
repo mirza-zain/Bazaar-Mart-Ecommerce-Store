@@ -1,20 +1,36 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { CartProvider } from "@/app/context/CartContext";
 
 export const metadata: Metadata = {
-  title: "Bazaario",
-  description: "Modern E-Commerce Store",
+  title: {
+    default: "Bazaario | Modern Fashion, Streetwear & Jewelry",
+    template: "%s | Bazaario",
+  },
+  description:
+    "Explore modern streetwear hoodies, tees, fine jewelry, and accessories at Bazaario. Free express shipping over PKR 8,000 across Pakistan with Cash on Delivery and Bank Transfer.",
+  keywords: [
+    "Bazaario",
+    "streetwear Pakistan",
+    "online clothing Karachi",
+    "hoodies Pakistan",
+    "jewelry",
+    "fashion accessories",
+  ],
+  openGraph: {
+    title: "Bazaario | Modern Fashion, Streetwear & Jewelry",
+    description:
+      "Explore modern streetwear hoodies, tees, fine jewelry, and accessories at Bazaario. Free delivery over PKR 8,000 nationwide.",
+    siteName: "Bazaario",
+    locale: "en_PK",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Bazaario | Modern Fashion, Streetwear & Jewelry",
+    description:
+      "Discover high-quality streetwear, fine jewelry, and everyday accessories at Bazaario.",
+  },
 };
 
 export default function RootLayout({
@@ -25,10 +41,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`h-full antialiased`}
     >
       <body className="min-h-full antialiased">
-        {children}
+        <CartProvider>
+          {children}
+        </CartProvider>
       </body>
     </html>
   );

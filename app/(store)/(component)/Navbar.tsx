@@ -3,6 +3,7 @@
 import { ChevronDown, Menu, ShoppingBag, X } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useCart } from "@/app/context/CartContext";
 
 const shopCategories = [
   {
@@ -38,6 +39,7 @@ const shopCategories = [
 ];
 
 export default function Navbar() {
+  const { totalItems, isLoaded } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [shopDropdownOpen, setShopDropdownOpen] = useState(false);
   const [mobileShopOpen, setMobileShopOpen] = useState(false);
@@ -142,6 +144,11 @@ export default function Navbar() {
       <div className="flex justify-center items-center gap-6 md:gap-10 md:mx-5">
         <Link href="/cart" aria-label="Cart" className="relative p-1 hover:opacity-70 transition-opacity">
           <ShoppingBag size={25} />
+          {isLoaded && totalItems > 0 && (
+            <span className="absolute -top-1 -right-1.5 bg-black text-white text-[10px] font-bold w-4.5 h-4.5 rounded-full flex items-center justify-center">
+              {totalItems > 99 ? "99+" : totalItems}
+            </span>
+          )}
         </Link>
         <button
           type="button"

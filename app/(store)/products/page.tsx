@@ -1,17 +1,27 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import type { Metadata } from "next";
 import { getStoreProducts } from "@/app/lib/actions/store";
 import ShopFilterView from "./(components)/ShopFilterView";
 
 interface Props {
-  searchParams: Promise<{ category?: string; subCategory?: string }>;
+  searchParams: Promise<{ category?: string; subCategory?: string; search?: string }>;
 }
+
+export const instant = false;
+
+export const metadata: Metadata = {
+  title: "Explore Catalog",
+  description:
+    "Filter and browse through our complete collection of modern streetwear hoodies, graphic tees, jewelry, and accessories.",
+};
 
 export default async function ProductsCatalogPage({ searchParams }: Props) {
   const resolvedParams = await searchParams;
   const activeCategory = resolvedParams?.category || "all";
   const activeSubCategory = resolvedParams?.subCategory || "all";
+  const activeSearch = resolvedParams?.search || "";
 
   const allProducts = await getStoreProducts();
 
@@ -44,6 +54,7 @@ export default async function ProductsCatalogPage({ searchParams }: Props) {
           initialProducts={allProducts}
           initialCategory={activeCategory}
           initialSubCategory={activeSubCategory}
+          initialSearch={activeSearch}
         />
       </div>
     </div>

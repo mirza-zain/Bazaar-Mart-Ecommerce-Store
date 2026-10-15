@@ -1,62 +1,24 @@
 'use client';
 
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Minus, Plus, ShoppingBag, Trash2, Truck } from "lucide-react";
-
-type CartItem = {
-  id: number;
-  name: string;
-  category: string;
-  price: number;
-  quantity: number;
-  image: string;
-};
+import { useCart } from "@/app/context/CartContext";
 
 export default function CartPage() {
-  const [items, setItems] = useState<CartItem[]>([
-    {
-      id: 1,
-      name: "Essential Oversized Hoodie",
-      category: "Clothing • Size M",
-      price: 4500,
-      quantity: 1,
-      image: "/images/img1.jpg",
-    },
-    {
-      id: 3,
-      name: "Cuban Link Silver Chain",
-      category: "Jewelry • 8mm Silver",
-      price: 3500,
-      quantity: 1,
-      image: "/images/img3.jpg",
-    },
-  ]);
+  const {
+    items,
+    isLoaded,
+    subtotal,
+    shippingFee,
+    freeShippingThreshold,
+    progressToFreeShipping,
+    updateQuantity,
+    removeItem,
+  } = useCart();
 
-  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const freeShippingThreshold = 8000;
-  const progressToFreeShipping = Math.min((subtotal / freeShippingThreshold) * 100, 100);
-  const shippingCost = subtotal >= freeShippingThreshold ? 0 : 250;
-  const total = subtotal + shippingCost;
-
-  const updateQuantity = (id: number, delta: number) => {
-    setItems((prev) =>
-      prev
-        .map((item) => {
-          if (item.id === id) {
-            const newQ = item.quantity + delta;
-            return newQ > 0 ? { ...item, quantity: newQ } : null;
-          }
-          return item;
-        })
-        .filter(Boolean) as CartItem[]
-    );
-  };
-
-  const removeItem = (id: number) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
-  };
+  const total = subtotal + shippingFee;
 
   return (
     <div className="w-full max-w-7xl mx-auto px-5 md:px-12 py-10">
@@ -80,7 +42,12 @@ export default function CartPage() {
         </p>
       </div>
 
-      {items.length === 0 ? (
+      {!isLoaded ? (
+        <div className="py-24 text-center">
+          <div className="inline-block w-8 h-8 border-3 border-neutral-300 border-t-black rounded-full animate-spin mb-3" />
+          <p className="text-sm text-neutral-500">Loading your shopping bag...</p>
+        </div>
+      ) : items.length === 0 ? (
         <div className="py-24 text-center bg-neutral-50 rounded-3xl border border-dashed border-neutral-300 mt-10">
           <ShoppingBag className="w-12 h-12 text-neutral-400 mx-auto mb-3" />
           <h2 className="text-2xl font-bold text-neutral-900">Your bag is empty</h2>
@@ -119,15 +86,33 @@ export default function CartPage() {
             <div className="divide-y divide-neutral-200 border-t border-b border-neutral-200">
               {items.map((item) => (
                 <div key={item.id} className="py-6 flex gap-4 sm:gap-6 items-center">
-                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-neutral-100 shrink-0 border border-neutral-200">
-                    <Image src={item.image} alt={item.name} fill className="object-cover" />
-                  </div>
+                  <Link
+                    href={`/products/${item.productId}`}
+                    className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-neutral-100 shrink-0 border border-neutral-200 block"
+                  >
+                    <Image
+                      src={item.image || "/images/img1.jpg"}
+                      alt={item.name}
+                      fill
+                      className="object-cover hover:scale-105 transition-transform"
+                    />
+                  </Link>
 
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-base sm:text-lg text-neutral-900 truncate">
+                    <Link
+                      href={`/products/${item.productId}`}
+                      className="font-semibold text-base sm:text-lg text-neutral-900 truncate block hover:underline"
+                    >
                       {item.name}
-                    </h3>
-                    <p className="text-xs text-neutral-400 mt-0.5">{item.category}</p>
+                    </Link>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <span className="text-xs text-neutral-500">{item.category}</span>
+                      {item.variant && (
+                        <span className="text-[11px] font-medium bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded-md border border-neutral-200">
+                          {item.variant}
+                        </span>
+                      )}
+                    </div>
                     <p className="font-semibold text-sm sm:text-base text-neutral-900 mt-1">
                       PKR {item.price.toLocaleString()}
                     </p>
@@ -136,8 +121,11 @@ export default function CartPage() {
                   {/* Quantity selector */}
                   <div className="flex items-center gap-2 border border-neutral-200 rounded-xl p-1 bg-neutral-50 shrink-0">
                     <button
+                      type="button"
+                      disabled={item.quantity <= 1}
                       onClick={() => updateQuantity(item.id, -1)}
-                      className="p-1 text-neutral-500 hover:text-black rounded-lg transition"
+                      className="p-1 text-neutral-500 hover:text-black rounded-lg transition disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
+                      aria-label="Decrease quantity"
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
@@ -145,8 +133,11 @@ export default function CartPage() {
                       {item.quantity}
                     </span>
                     <button
+                      type="button"
+                      disabled={item.maxStock !== undefined && item.quantity >= item.maxStock}
                       onClick={() => updateQuantity(item.id, 1)}
-                      className="p-1 text-neutral-500 hover:text-black rounded-lg transition"
+                      className="p-1 text-neutral-500 hover:text-black rounded-lg transition disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
+                      aria-label="Increase quantity"
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
@@ -154,8 +145,9 @@ export default function CartPage() {
 
                   {/* Remove Button */}
                   <button
+                    type="button"
                     onClick={() => removeItem(item.id)}
-                    className="p-2 text-neutral-400 hover:text-rose-600 transition shrink-0"
+                    className="p-2 text-neutral-400 hover:text-rose-600 transition shrink-0 cursor-pointer"
                     title="Remove item"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -178,7 +170,7 @@ export default function CartPage() {
               </div>
               <div className="flex justify-between text-neutral-600">
                 <span>Estimated Delivery</span>
-                <span>{shippingCost === 0 ? "FREE" : `PKR ${shippingCost}`}</span>
+                <span>{shippingFee === 0 ? "FREE" : `PKR ${shippingFee}`}</span>
               </div>
               <div className="pt-3 border-t border-neutral-200 flex justify-between text-base font-bold text-neutral-900">
                 <span>Total</span>

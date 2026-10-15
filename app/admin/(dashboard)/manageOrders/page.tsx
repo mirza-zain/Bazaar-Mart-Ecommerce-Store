@@ -3,6 +3,8 @@ import { getDashboardData } from "@/app/lib/actions/admin";
 import { ReceiptText } from "lucide-react";
 import AdminClientView from "../(components)/AdminClientView";
 
+export const instant = false;
+
 export default async function ManageOrdersPage() {
   const data = await getDashboardData();
 

@@ -30,7 +30,8 @@ export default function BottomBanner() {
             alt="Modern fashion banner"
             width={800}
             height={500}
-            className="w-full max-w-sm sm:max-w-md md:max-w-full h-auto object-contain"
+            style={{ width: "100%", height: "auto" }}
+            className="w-full max-w-sm sm:max-w-md md:max-w-full object-contain"
             sizes="(max-width: 768px) 100vw, 50vw"
           />
         </div>

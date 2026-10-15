@@ -3,13 +3,15 @@ import React from "react";
 import Navbar from "./(components)/Navbar";
 
 export const metadata: Metadata = {
-  title: "Zarb Admin",
+  title: "Bazaario Admin",
   description: "Store Operations Console",
   robots: {
     index: false,
     follow: false,
   },
 };
+
+export const instant = false;
 
 export default function AdminLayout({
   children,

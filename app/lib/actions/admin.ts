@@ -1,12 +1,15 @@
 'use server';
 
 import { db } from "@/app/lib/db";
-import { orders, products, Order, Product } from "@/app/db/schema";
+import { orders, products, discountCodes, Order, Product, DiscountCode } from "@/app/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { connection } from "next/server";
+import { uploadToCloudinary, uploadFileAction } from "@/app/lib/cloudinary";
 
 // Ensure tables exist on Neon if migrations haven't run yet
 export async function ensureTablesExist() {
+  await connection();
   try {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS products (
@@ -27,9 +30,40 @@ export async function ensureTablesExist() {
         id SERIAL PRIMARY KEY,
         customer_name TEXT NOT NULL,
         customer_email TEXT NOT NULL,
+        phone TEXT,
+        address TEXT,
+        city TEXT,
         total_amount NUMERIC NOT NULL,
         status TEXT NOT NULL DEFAULT 'Pending',
+        payment_method TEXT NOT NULL DEFAULT 'cod',
+        payment_proof TEXT,
+        payment_status TEXT NOT NULL DEFAULT 'Pending',
+        discount_code TEXT,
+        discount_amount NUMERIC DEFAULT '0',
         items JSONB NOT NULL DEFAULT '[]'::jsonb,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS discount_codes (
+        id SERIAL PRIMARY KEY,
+        code TEXT NOT NULL UNIQUE,
+        discount_percent NUMERIC NOT NULL,
+        min_order_amount NUMERIC DEFAULT '0',
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS inquiries (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        subject TEXT,
+        message TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'Unread',
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);
@@ -99,7 +133,23 @@ export async function addProductAction(formData: FormData) {
     const subCategory = (formData.get("subCategory") as string) || "General";
     const price = formData.get("price") as string;
     const stock = formData.get("stock") as string;
-    const image = (formData.get("image") as string) || "/images/img1.jpg";
+    
+    // Cloudinary image upload handling
+    const imageInput = (formData.get("image") as string) || "";
+    let finalImageUrl = imageInput.trim() || "/images/img1.jpg";
+
+    const imageFile = formData.get("imageFile") as File | null;
+    if (imageFile && typeof imageFile !== "string" && imageFile.size > 0) {
+      const uploadRes = await uploadFileAction(formData);
+      if (uploadRes.success && uploadRes.url) {
+        finalImageUrl = uploadRes.url;
+      }
+    } else if (imageInput && imageInput.startsWith("data:image/")) {
+      const uploadRes = await uploadToCloudinary(imageInput, "bazzario/products");
+      if (uploadRes.success && uploadRes.url) {
+        finalImageUrl = uploadRes.url;
+      }
+    }
 
     if (!name || !price || !category) {
       return { success: false, error: "Name, price, and category are required." };
@@ -112,7 +162,7 @@ export async function addProductAction(formData: FormData) {
       subCategory,
       price: price.toString(),
       stock: (stock || "10").toString(),
-      image,
+      image: finalImageUrl,
       variants: [],
     });
 
@@ -151,118 +201,70 @@ export async function updateOrderStatusAction(orderId: number, status: string) {
   }
 }
 
-export async function seedDemoDataAction() {
+export async function verifyPaymentAction(orderId: number, paymentStatus: "Verified" | "Rejected") {
   try {
     await ensureTablesExist();
-
-    const existingProducts = await db.select().from(products).limit(1);
-    if (existingProducts.length === 0) {
-      // Seed initial products
-      const demoProducts = [
-        {
-          name: "Essential Hoodie",
-          description: "Premium fleece oversized streetwear hoodie with minimal branding.",
-          category: "Clothing",
-          subCategory: "Hoodie",
-          price: "4500",
-          stock: "45",
-          image: "/images/img1.jpg",
-          variants: [
-            { label: "S", price: 4500, stock: 15 },
-            { label: "M", price: 4500, stock: 20 },
-            { label: "L", price: 4500, stock: 10 },
-          ],
-        },
-        {
-          name: "Boxy Streetwear Tee",
-          description: "Heavyweight 240 GSM dropped shoulder crewneck t-shirt.",
-          category: "Clothing",
-          subCategory: "T-Shirt",
-          price: "2200",
-          stock: "60",
-          image: "/images/img2.jpg",
-          variants: [],
-        },
-        {
-          name: "Cuban Link Silver Chain",
-          description: "Handcrafted 925 sterling silver plated 8mm Cuban link chain.",
-          category: "Jewelry",
-          subCategory: "Necklaces",
-          price: "3500",
-          stock: "8", // Low stock demo
-          image: "/images/img3.jpg",
-          variants: [],
-        },
-        {
-          name: "Retro Acetate Sunglasses",
-          description: "Vintage inspired UV400 polarized square sunglasses with tortoise frame.",
-          category: "Accessories",
-          subCategory: "Eyewear",
-          price: "2800",
-          stock: "25",
-          image: "/images/img4.jpg",
-          variants: [],
-        },
-        {
-          name: "Structured Denim Overshirt",
-          description: "Washed raw denim jacket with relaxed utilitarian workwear pockets.",
-          category: "Clothing",
-          subCategory: "Jackets",
-          price: "6800",
-          stock: "14",
-          image: "/images/img1.jpg",
-          variants: [],
-        },
-      ];
-
-      for (const p of demoProducts) {
-        await db.insert(products).values(p);
-      }
+    const updateData: { paymentStatus: string; status?: string } = { paymentStatus };
+    if (paymentStatus === "Verified") {
+      updateData.status = "Processing";
     }
-
-    const existingOrders = await db.select().from(orders).limit(1);
-    if (existingOrders.length === 0) {
-      // Seed sample orders
-      const demoOrders = [
-        {
-          customerName: "Ahmad Khan",
-          customerEmail: "ahmad.k@gmail.com",
-          totalAmount: "9000",
-          status: "Delivered",
-          items: [
-            { productId: 1, name: "Essential Hoodie", quantity: 2, price: 4500 },
-          ],
-        },
-        {
-          customerName: "Sara Bilal",
-          customerEmail: "sara.b@hotmail.com",
-          totalAmount: "5700",
-          status: "Processing",
-          items: [
-            { productId: 2, name: "Boxy Streetwear Tee", quantity: 1, price: 2200 },
-            { productId: 3, name: "Cuban Link Silver Chain", quantity: 1, price: 3500 },
-          ],
-        },
-        {
-          customerName: "Zainab Tariq",
-          customerEmail: "zainab.t@yahoo.com",
-          totalAmount: "2800",
-          status: "Pending",
-          items: [
-            { productId: 4, name: "Retro Acetate Sunglasses", quantity: 1, price: 2800 },
-          ],
-        },
-      ];
-
-      for (const o of demoOrders) {
-        await db.insert(orders).values(o);
-      }
-    }
-
+    await db.update(orders).set(updateData).where(eq(orders.id, orderId));
     revalidatePath("/admin");
+    revalidatePath("/admin/manageOrders");
     return { success: true };
   } catch (error) {
-    console.error("Error seeding demo data:", error);
-    return { success: false, error: "Failed to seed demo data." };
+    console.error("Error verifying payment:", error);
+    return { success: false, error: "Failed to update payment status." };
   }
 }
+
+export async function getDiscountCodesAction(): Promise<DiscountCode[]> {
+  await connection();
+  try {
+    await ensureTablesExist();
+    return await db.select().from(discountCodes).orderBy(desc(discountCodes.id));
+  } catch (error) {
+    console.error("Error fetching discount codes:", error);
+    return [];
+  }
+}
+
+export async function createDiscountCodeAction(formData: FormData) {
+  try {
+    await ensureTablesExist();
+    const code = (formData.get("code") as string)?.trim().toUpperCase();
+    const discountPercent = formData.get("discountPercent") as string;
+    const minOrderAmount = (formData.get("minOrderAmount") as string) || "0";
+
+    if (!code || !discountPercent) {
+      return { success: false, error: "Code and discount percentage are required." };
+    }
+
+    await db.insert(discountCodes).values({
+      code,
+      discountPercent: discountPercent.toString(),
+      minOrderAmount: minOrderAmount.toString(),
+      isActive: true,
+    });
+
+    revalidatePath("/admin/pricing");
+    return { success: true };
+  } catch (error) {
+    console.error("Error creating discount code:", error);
+    return { success: false, error: "Failed to create discount code (code may already exist)." };
+  }
+}
+
+export async function deleteDiscountCodeAction(id: number) {
+  try {
+    await ensureTablesExist();
+    await db.delete(discountCodes).where(eq(discountCodes.id, id));
+    revalidatePath("/admin/pricing");
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting discount code:", error);
+    return { success: false, error: "Failed to delete discount code." };
+  }
+}
+
+

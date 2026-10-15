@@ -2,6 +2,8 @@ import React from "react";
 import { getDashboardData } from "@/app/lib/actions/admin";
 import { ArrowUpRight, DollarSign, Package, TrendingUp, Users } from "lucide-react";
 
+export const instant = false;
+
 export default async function SalesPage() {
   const data = await getDashboardData();
   const avgOrderValue = data.stats.totalOrders > 0 

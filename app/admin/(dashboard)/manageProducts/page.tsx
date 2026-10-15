@@ -2,6 +2,8 @@ import React from "react";
 import { getDashboardData } from "@/app/lib/actions/admin";
 import AdminClientView from "../(components)/AdminClientView";
 
+export const instant = false;
+
 export default async function ManageProductsPage() {
   const data = await getDashboardData();
 

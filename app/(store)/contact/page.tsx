@@ -1,11 +1,52 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Clock, Mail, MapPin, MessageSquare, Phone, Send } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Clock,
+  Mail,
+  MapPin,
+  MessageSquare,
+  Phone,
+  Send,
+  ChevronDown,
+  AlertCircle,
+  HelpCircle,
+  MessageCircle,
+} from "lucide-react";
+import { submitInquiryAction } from "@/app/lib/actions/inquiries";
+
+const faqs = [
+  {
+    question: "How long does delivery take across Pakistan?",
+    answer:
+      "All orders are processed within 24 hours. Deliveries within Karachi typically arrive within 1-2 business days. Deliveries to Lahore, Islamabad, Rawalpindi, and other nationwide destinations arrive in 2-4 business days via Leopard and TCS Express.",
+  },
+  {
+    question: "What payment methods do you accept?",
+    answer:
+      "We accept Cash on Delivery (COD) for deliveries in Karachi. For all other cities across Pakistan, we accept direct Bank Transfer (Meezan, HBL, Bank Alfalah, Nayapay, Sadapay) with instant verification upon uploading your transfer screenshot at checkout.",
+  },
+  {
+    question: "What is your return and exchange policy?",
+    answer:
+      "We offer a 30-day hassle-free return and exchange policy. Products must be unworn, undamaged, and returned with original tags intact. If you need a size exchange, contact our support team and we will coordinate courier pickup.",
+  },
+  {
+    question: "How can I track my shipment?",
+    answer:
+      "You can track your order anytime on our dedicated tracking page at /track. Simply enter your Order ID (e.g. #ORD-0001) or the email address used during checkout to view live status updates and courier dispatch details.",
+  },
+  {
+    question: "How do I know my size before ordering?",
+    answer:
+      "Our streetwear hoodies and tees follow modern relaxed / slightly oversized silhouettes. Check the variant specifications on each product page or reach out to us on WhatsApp with your height and weight for quick sizing advice.",
+  },
+];
 
 export default function ContactPage() {
-  const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -13,16 +54,34 @@ export default function ContactPage() {
     message: "",
   });
 
+  const [submitted, setSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setFormData({ name: "", email: "", subject: "", message: "" });
+    setErrorMessage(null);
+
+    startTransition(async () => {
+      const res = await submitInquiryAction(formData);
+      if (res.success) {
+        setSubmitted(true);
+        setFormData({ name: "", email: "", subject: "", message: "" });
+      } else {
+        setErrorMessage(res.error || "Failed to send message. Please try again.");
+      }
+    });
+  };
+
+  const toggleFaq = (index: number) => {
+    setOpenFaqIndex(openFaqIndex === index ? null : index);
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-5 md:px-12 py-10">
+    <div className="w-full max-w-7xl mx-auto px-5 md:px-12 py-10 space-y-12">
       {/* Back to Home */}
-      <div className="mb-6">
+      <div>
         <Link
           href="/"
           className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-black transition"
@@ -32,18 +91,45 @@ export default function ContactPage() {
         </Link>
       </div>
 
+      {/* Header */}
       <div className="pb-8 border-b border-neutral-200">
         <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tight text-neutral-900">
-          Contact Us
+          Contact & Support
         </h1>
-        <p className="text-neutral-500 text-sm md:text-base mt-1">
-          Have a question about your order, sizing, or styling advice? We are here 24/7.
+        <p className="text-neutral-500 text-sm md:text-base mt-2 max-w-xl">
+          Have questions about sizing, your active shipment, or wholesale inquiries? Our Karachi-based support team is here to assist you.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-10">
-        {/* Contact Info Cards */}
+      {/* Main Grid: Channels + Contact Form */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        {/* Contact Info Channels (1 col) */}
         <div className="space-y-4">
+          {/* WhatsApp Direct */}
+          <a
+            href="https://wa.me/923001234567?text=Hello%20Bazaario%2C%20I%20have%20an%20inquiry%20regarding%20an%20order"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-6 bg-emerald-50 rounded-2xl border border-emerald-200/80 flex items-start gap-4 hover:border-emerald-400 transition group block"
+          >
+            <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <MessageCircle className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-base text-emerald-950">WhatsApp Chat</h3>
+                <span className="text-[10px] bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full font-bold uppercase">
+                  Fastest
+                </span>
+              </div>
+              <p className="text-xs text-emerald-700 mt-0.5">Average reply in 5 minutes</p>
+              <p className="text-sm font-bold text-emerald-900 mt-2 group-hover:underline">
+                Chat on WhatsApp →
+              </p>
+            </div>
+          </a>
+
+          {/* Email Support */}
           <div className="p-6 bg-neutral-50 rounded-2xl border border-neutral-200/80 flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-black text-white flex items-center justify-center shrink-0">
               <Mail className="w-5 h-5" />
@@ -51,66 +137,80 @@ export default function ContactPage() {
             <div>
               <h3 className="font-semibold text-base text-neutral-900">Email Support</h3>
               <p className="text-xs text-neutral-500 mt-0.5">Average response under 2 hours</p>
-              <p className="text-sm font-medium text-neutral-900 mt-2">support@bazaario.com</p>
+              <a
+                href="mailto:support@bazaario.com"
+                className="text-sm font-semibold text-neutral-900 hover:underline mt-2 inline-block"
+              >
+                support@bazaario.com
+              </a>
             </div>
           </div>
 
+          {/* Phone Hotline */}
           <div className="p-6 bg-neutral-50 rounded-2xl border border-neutral-200/80 flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-black text-white flex items-center justify-center shrink-0">
               <Phone className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-semibold text-base text-neutral-900">Phone & WhatsApp</h3>
-              <p className="text-xs text-neutral-500 mt-0.5">Mon - Sat from 9am to 9pm</p>
-              <p className="text-sm font-medium text-neutral-900 mt-2">+92 300 1234567</p>
+              <h3 className="font-semibold text-base text-neutral-900">Helpline</h3>
+              <p className="text-xs text-neutral-500 mt-0.5">Mon - Sat from 10:00 AM to 8:00 PM</p>
+              <a
+                href="tel:+923001234567"
+                className="text-sm font-mono font-semibold text-neutral-900 hover:underline mt-2 inline-block"
+              >
+                +92 (300) 123-4567
+              </a>
             </div>
           </div>
 
+          {/* Studio Location */}
           <div className="p-6 bg-neutral-50 rounded-2xl border border-neutral-200/80 flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-black text-white flex items-center justify-center shrink-0">
               <MapPin className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-semibold text-base text-neutral-900">Flagship Studio</h3>
+              <h3 className="font-semibold text-base text-neutral-900">Studio & Showroom</h3>
               <p className="text-xs text-neutral-500 mt-0.5">Main Boulevard, Clifton Block 4</p>
-              <p className="text-sm font-medium text-neutral-900 mt-2">Karachi, Pakistan</p>
-            </div>
-          </div>
-
-          <div className="p-6 bg-neutral-50 rounded-2xl border border-neutral-200/80 flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-black text-white flex items-center justify-center shrink-0">
-              <Clock className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-base text-neutral-900">Order Delivery</h3>
-              <p className="text-xs text-neutral-500 mt-0.5">2-4 working days nationwide</p>
-              <Link href="/track" className="text-xs font-semibold text-black underline mt-2 inline-block">
-                Track your package here →
-              </Link>
+              <p className="text-xs text-neutral-700 mt-1">Karachi, Sindh 75600, Pakistan</p>
             </div>
           </div>
         </div>
 
-        {/* Contact Form */}
-        <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-neutral-200 shadow-xs">
-          <h2 className="text-2xl font-bold text-neutral-900 mb-2">Send us a Message</h2>
+        {/* Contact Form (2 cols) */}
+        <div className="lg:col-span-2 bg-white p-8 sm:p-10 rounded-3xl border border-neutral-200 shadow-xs">
+          <div className="flex items-center gap-2 mb-1">
+            <MessageSquare className="w-5 h-5 text-neutral-700" />
+            <h2 className="text-2xl font-bold text-neutral-900">Send an Inquiry</h2>
+          </div>
           <p className="text-sm text-neutral-500 mb-6">
-            Fill in the details below and a team member will reach out promptly.
+            Fill in your details and message below. We will follow up via email promptly.
           </p>
 
+          {errorMessage && (
+            <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-rose-800 text-sm">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
           {submitted ? (
-            <div className="p-8 bg-emerald-50 rounded-2xl border border-emerald-200 text-center space-y-3">
-              <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
-              <h3 className="text-xl font-bold text-emerald-900">Message Received!</h3>
-              <p className="text-sm text-emerald-700 max-w-md mx-auto">
-                Thank you for contacting Bazaario. We have dispatched your request to customer support and will reply to your email shortly.
+            <div className="p-10 bg-emerald-50 rounded-3xl border border-emerald-200 text-center space-y-4 animate-in fade-in duration-300">
+              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-10 h-10" />
+              </div>
+              <h3 className="text-2xl font-bold text-emerald-950">Message Sent Successfully!</h3>
+              <p className="text-sm text-emerald-800 max-w-md mx-auto leading-relaxed">
+                Thank you for reaching out to Bazaario. We have logged your inquiry and our support team will respond to your email address shortly.
               </p>
-              <button
-                onClick={() => setSubmitted(false)}
-                className="mt-4 px-6 py-2.5 bg-black text-white text-sm font-semibold rounded-xl hover:bg-neutral-800 transition cursor-pointer"
-              >
-                Send Another Message
-              </button>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSubmitted(false)}
+                  className="px-6 py-3 bg-black text-white text-sm font-semibold rounded-xl hover:bg-neutral-800 transition cursor-pointer"
+                >
+                  Send Another Inquiry
+                </button>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -152,7 +252,7 @@ export default function ContactPage() {
                   type="text"
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  placeholder="e.g. Question about Order #ORD-0001 or sizing"
+                  placeholder="e.g. Sizing Advice or Order #ORD-0001"
                   className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black transition"
                 />
               </div>
@@ -166,23 +266,67 @@ export default function ContactPage() {
                   required
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  placeholder="How can we help you today?"
+                  placeholder="Please describe how we can assist you..."
                   className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black transition"
                 />
               </div>
 
               <button
                 type="submit"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-black text-white font-semibold text-sm rounded-xl hover:bg-neutral-800 transition cursor-pointer shadow-sm w-full sm:w-auto"
+                disabled={isPending}
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-black text-white font-semibold text-sm rounded-xl hover:bg-neutral-800 transition cursor-pointer shadow-sm w-full sm:w-auto disabled:opacity-60"
               >
-                <span>Send Inquiry</span>
+                <span>{isPending ? "Sending Inquiry..." : "Submit Inquiry"}</span>
                 <Send className="w-4 h-4" />
               </button>
             </form>
           )}
         </div>
       </div>
+
+      {/* Frequently Asked Questions Section */}
+      <div className="pt-10 border-t border-neutral-200">
+        <div className="flex items-center gap-2 mb-2">
+          <HelpCircle className="w-5 h-5 text-neutral-700" />
+          <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight text-neutral-900">
+            Frequently Asked Questions
+          </h2>
+        </div>
+        <p className="text-sm text-neutral-500 mb-8 max-w-xl">
+          Quick answers to common questions regarding shipping schedules, payment security, and order returns.
+        </p>
+
+        <div className="space-y-3 max-w-4xl">
+          {faqs.map((faq, index) => {
+            const isOpen = openFaqIndex === index;
+            return (
+              <div
+                key={index}
+                className="border border-neutral-200 rounded-2xl overflow-hidden bg-white transition shadow-xs"
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleFaq(index)}
+                  className="w-full p-5 text-left flex items-center justify-between gap-4 font-semibold text-neutral-900 text-sm sm:text-base hover:bg-neutral-50/70 transition cursor-pointer"
+                >
+                  <span>{faq.question}</span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-neutral-500 shrink-0 transition-transform duration-200 ${
+                      isOpen ? "rotate-180 text-black" : ""
+                    }`}
+                  />
+                </button>
+
+                {isOpen && (
+                  <div className="px-5 pb-5 pt-1 text-sm text-neutral-600 leading-relaxed border-t border-neutral-100 animate-in fade-in duration-150">
+                    {faq.answer}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
-

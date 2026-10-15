@@ -1,16 +1,7 @@
-import { neonConfig, Pool } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-serverless";
-import dns from "node:dns"
-import ws from "ws"
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
 
-dns.setDefaultResultOrder("ipv4first")
+const connectionString = (process.env.DATABASE_URL || "").trim();
+const sql = neon(connectionString);
 
-neonConfig.webSocketConstructor = ws
-
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-})
-
-export const db = drizzle({
-    client: pool
-})
+export const db = drizzle(sql);

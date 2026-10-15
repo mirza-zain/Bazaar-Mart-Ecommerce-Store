@@ -4,23 +4,28 @@ import React, { useState, useTransition } from "react";
 import Image from "next/image";
 import {
   AlertTriangle,
+  Ban,
+  Check,
   CheckCircle2,
   Clock,
+  CreditCard,
   DollarSign,
+  Eye,
   Package,
   Plus,
   ReceiptText,
   Search,
-  Sparkles,
   Trash2,
+  Upload,
+  ImageIcon,
   X,
 } from "lucide-react";
 import { Product, Order } from "@/app/db/schema";
 import {
   addProductAction,
   deleteProductAction,
-  seedDemoDataAction,
   updateOrderStatusAction,
+  verifyPaymentAction,
   DashboardStats,
 } from "@/app/lib/actions/admin";
 
@@ -40,6 +45,7 @@ export default function AdminClientView({
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [selectedProofOrder, setSelectedProofOrder] = useState<Order | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   // Form state
@@ -50,6 +56,22 @@ export default function AdminClientView({
   const [stock, setStock] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState("/images/img1.jpg");
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setImagePreview(base64);
+        setImage(base64);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
@@ -79,6 +101,9 @@ export default function AdminClientView({
     formData.append("stock", stock);
     formData.append("description", description);
     formData.append("image", image);
+    if (selectedFile) {
+      formData.append("imageFile", selectedFile);
+    }
 
     startTransition(async () => {
       const res = await addProductAction(formData);
@@ -88,6 +113,9 @@ export default function AdminClientView({
         setPrice("");
         setStock("");
         setDescription("");
+        setSelectedFile(null);
+        setImagePreview(null);
+        setImage("/images/img1.jpg");
         setStatusMessage("Product added successfully!");
         setTimeout(() => setStatusMessage(null), 3000);
       } else {
@@ -113,12 +141,17 @@ export default function AdminClientView({
     });
   };
 
-  const handleSeedData = () => {
+  const handleVerifyPayment = (orderId: number, status: "Verified" | "Rejected") => {
     startTransition(async () => {
-      const res = await seedDemoDataAction();
+      const res = await verifyPaymentAction(orderId, status);
       if (res.success) {
-        setStatusMessage("Demo store data loaded successfully!");
+        setStatusMessage(`Payment marked as ${status}.`);
+        if (selectedProofOrder && selectedProofOrder.id === orderId) {
+          setSelectedProofOrder(null);
+        }
         setTimeout(() => setStatusMessage(null), 3000);
+      } else {
+        alert(res.error || "Failed to update payment status.");
       }
     });
   };
@@ -137,17 +170,6 @@ export default function AdminClientView({
         </div>
 
         <div className="flex items-center gap-3">
-          {products.length === 0 && (
-            <button
-              onClick={handleSeedData}
-              disabled={isPending}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-sm font-medium rounded-xl transition cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4 text-amber-600" />
-              <span>Load Demo Data</span>
-            </button>
-          )}
-
           <button
             onClick={() => setIsModalOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-black hover:bg-neutral-800 text-white text-sm font-medium rounded-xl shadow-sm transition cursor-pointer"
@@ -300,10 +322,10 @@ export default function AdminClientView({
                       <Package className="w-8 h-8 mx-auto text-neutral-300 mb-2" />
                       <p>No products found in database.</p>
                       <button
-                        onClick={handleSeedData}
+                        onClick={() => setIsModalOpen(true)}
                         className="mt-3 text-sm text-black underline font-medium cursor-pointer"
                       >
-                        Load demo catalog
+                        Add your first product
                       </button>
                     </td>
                   </tr>
@@ -383,9 +405,9 @@ export default function AdminClientView({
                 <tr>
                   <th className="py-3 px-4">Order ID</th>
                   <th className="py-3 px-4">Customer</th>
-                  <th className="py-3 px-4">Amount</th>
-                  <th className="py-3 px-4">Items</th>
-                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Payment & Total</th>
+                  <th className="py-3 px-4">Payment Proof & Approval</th>
+                  <th className="py-3 px-4">Fulfillment</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
@@ -397,45 +419,154 @@ export default function AdminClientView({
                     </td>
                   </tr>
                 ) : (
-                  filteredOrders.map((o) => (
-                    <tr key={o.id} className="hover:bg-neutral-50/60 transition">
-                      <td className="py-3 px-4 font-mono font-medium text-neutral-700">
-                        #ORD-{o.id.toString().padStart(4, "0")}
-                      </td>
+                  filteredOrders.map((o) => {
+                    const isBankTransfer = o.paymentMethod === "bank_transfer";
+                    const isVerified = o.paymentStatus === "Verified";
+                    const isRejected = o.paymentStatus === "Rejected";
 
-                      <td className="py-3 px-4">
-                        <p className="font-semibold text-neutral-900">{o.customerName}</p>
-                        <p className="text-xs text-neutral-400">{o.customerEmail}</p>
-                      </td>
+                    return (
+                      <tr key={o.id} className="hover:bg-neutral-50/60 transition">
+                        <td className="py-3 px-4 font-mono font-medium text-neutral-700">
+                          #ORD-{o.id.toString().padStart(4, "0")}
+                        </td>
 
-                      <td className="py-3 px-4 font-semibold text-neutral-900">
-                        PKR {Number(o.totalAmount).toLocaleString()}
-                      </td>
+                        <td className="py-3 px-4">
+                          <p className="font-semibold text-neutral-900">{o.customerName}</p>
+                          <p className="text-xs text-neutral-400">{o.customerEmail}</p>
+                          {o.phone && <p className="text-xs text-neutral-500 font-mono mt-0.5">{o.phone}</p>}
+                          {o.city && (
+                            <p className="text-xs text-neutral-400 truncate max-w-[220px]" title={o.address ? `${o.address}, ${o.city}` : o.city}>
+                              {o.city}{o.address ? ` • ${o.address}` : ""}
+                            </p>
+                          )}
+                          {o.items && o.items.length > 0 && (
+                            <div className="mt-1.5 flex flex-wrap gap-1 max-w-[280px]">
+                              {o.items.map((it: any, idx: number) => (
+                                <span
+                                  key={idx}
+                                  className="inline-block text-[10px] bg-neutral-100 text-neutral-700 px-1.5 py-0.5 rounded border border-neutral-200"
+                                  title={`${it.name} (Qty: ${it.quantity}${it.variant ? `, ${it.variant}` : ""})`}
+                                >
+                                  {it.quantity}x {it.name.length > 18 ? `${it.name.slice(0, 18)}...` : it.name}
+                                  {it.variant && ` (${it.variant})`}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </td>
 
-                      <td className="py-3 px-4 text-neutral-600">
-                        {o.items?.length || 1} item(s)
-                      </td>
+                        <td className="py-3 px-4">
+                          <p className="font-semibold text-neutral-900">
+                            PKR {Number(o.totalAmount).toLocaleString()}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                isBankTransfer
+                                  ? "bg-purple-100 text-purple-800"
+                                  : "bg-neutral-100 text-neutral-700"
+                              }`}
+                            >
+                              {isBankTransfer ? "Bank Transfer" : "COD"}
+                            </span>
+                            {o.discountCode && (
+                              <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-medium">
+                                {o.discountCode} (-PKR {Number(o.discountAmount || 0).toLocaleString()})
+                              </span>
+                            )}
+                          </div>
+                        </td>
 
-                      <td className="py-3 px-4">
-                        <select
-                          value={o.status}
-                          onChange={(e) => handleUpdateOrderStatus(o.id, e.target.value)}
-                          className={`text-xs font-semibold py-1 px-2.5 rounded-lg border transition ${
-                            o.status === "Delivered"
-                              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                              : o.status === "Processing"
-                              ? "bg-blue-50 text-blue-800 border-blue-200"
-                              : "bg-amber-50 text-amber-800 border-amber-200"
-                          }`}
-                        >
-                          <option value="Pending">Pending</option>
-                          <option value="Processing">Processing</option>
-                          <option value="Delivered">Delivered</option>
-                          <option value="Cancelled">Cancelled</option>
-                        </select>
-                      </td>
-                    </tr>
-                  ))
+                        <td className="py-3 px-4">
+                          {isBankTransfer ? (
+                            <div className="space-y-1.5">
+                              <span
+                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                                  isVerified
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : isRejected
+                                    ? "bg-rose-100 text-rose-800"
+                                    : "bg-amber-100 text-amber-800"
+                                }`}
+                              >
+                                {isVerified ? (
+                                  <>
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                    <span>Verified</span>
+                                  </>
+                                ) : isRejected ? (
+                                  <>
+                                    <Ban className="w-3 h-3 text-rose-600" />
+                                    <span>Rejected</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clock className="w-3 h-3 text-amber-600" />
+                                    <span>Pending Verification</span>
+                                  </>
+                                )}
+                              </span>
+
+                              <div className="flex items-center gap-2 pt-1">
+                                {o.paymentProof && (
+                                  <button
+                                    onClick={() => setSelectedProofOrder(o)}
+                                    className="inline-flex items-center gap-1 text-xs text-neutral-700 hover:text-black font-medium underline cursor-pointer"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                    <span>View Receipt</span>
+                                  </button>
+                                )}
+
+                                {!isVerified && (
+                                  <button
+                                    onClick={() => handleVerifyPayment(o.id, "Verified")}
+                                    disabled={isPending}
+                                    className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-lg transition cursor-pointer"
+                                    title="Approve Bank Payment"
+                                  >
+                                    Approve
+                                  </button>
+                                )}
+
+                                {!isRejected && !isVerified && (
+                                  <button
+                                    onClick={() => handleVerifyPayment(o.id, "Rejected")}
+                                    disabled={isPending}
+                                    className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-semibold rounded-lg transition cursor-pointer"
+                                    title="Reject Payment"
+                                  >
+                                    Reject
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-neutral-500">Collect on delivery</span>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <select
+                            value={o.status}
+                            onChange={(e) => handleUpdateOrderStatus(o.id, e.target.value)}
+                            className={`text-xs font-semibold py-1 px-2.5 rounded-lg border transition ${
+                              o.status === "Delivered"
+                                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                : o.status === "Processing"
+                                ? "bg-blue-50 text-blue-800 border-blue-200"
+                                : "bg-amber-50 text-amber-800 border-amber-200"
+                            }`}
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Processing">Processing</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
+                          </select>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -536,18 +667,66 @@ export default function AdminClientView({
 
               <div>
                 <label className="block text-xs font-medium text-neutral-700 uppercase mb-1">
-                  Product Image
+                  Product Image (Cloudinary)
                 </label>
-                <select
-                  value={image}
-                  onChange={(e) => setImage(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black"
-                >
-                  <option value="/images/img1.jpg">Image 1 (/images/img1.jpg)</option>
-                  <option value="/images/img2.jpg">Image 2 (/images/img2.jpg)</option>
-                  <option value="/images/img3.jpg">Image 3 (/images/img3.jpg)</option>
-                  <option value="/images/img4.jpg">Image 4 (/images/img4.jpg)</option>
-                </select>
+
+                {imagePreview || (image && !image.startsWith("data:")) ? (
+                  <div className="relative mb-2.5 flex items-center gap-3 p-2.5 bg-neutral-50 rounded-xl border border-neutral-200">
+                    <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-white shrink-0 border border-neutral-200">
+                      <Image
+                        src={imagePreview || image}
+                        alt="Preview"
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-neutral-800 truncate">
+                        {selectedFile ? selectedFile.name : image}
+                      </p>
+                      <p className="text-[11px] text-emerald-600 font-medium">Ready to upload to Cloudinary</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setImagePreview(null);
+                        setImage("/images/img1.jpg");
+                      }}
+                      className="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-200 rounded-lg transition"
+                      title="Reset image"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : null}
+
+                <div className="flex gap-2">
+                  <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-semibold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-xl cursor-pointer transition border border-dashed border-neutral-300">
+                    <Upload className="w-4 h-4 text-neutral-500" />
+                    <span>Upload Image from Device</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                <div className="mt-2">
+                  <input
+                    type="text"
+                    value={image.startsWith("data:") ? "" : image}
+                    onChange={(e) => {
+                      setImage(e.target.value);
+                      setImagePreview(null);
+                      setSelectedFile(null);
+                    }}
+                    placeholder="Or enter image URL / Cloudinary URL"
+                    className="w-full px-3 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-black"
+                  />
+                </div>
               </div>
 
               <div>
@@ -580,6 +759,98 @@ export default function AdminClientView({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Screenshot Proof Inspection Modal */}
+      {selectedProofOrder && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-neutral-200 max-h-[92vh] overflow-y-auto space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+              <div>
+                <h3 className="text-lg font-bold text-neutral-900">
+                  Payment Transfer Screenshot
+                </h3>
+                <p className="text-xs text-neutral-500 font-mono">
+                  Order #ORD-{selectedProofOrder.id.toString().padStart(4, "0")}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setSelectedProofOrder(null)}
+                className="p-1.5 text-neutral-400 hover:text-neutral-900 rounded-xl transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Customer & Order details summary */}
+            <div className="grid grid-cols-2 gap-3 p-3 bg-neutral-50 rounded-2xl text-xs">
+              <div>
+                <span className="text-neutral-400 font-medium block">Customer</span>
+                <span className="font-semibold text-neutral-900">{selectedProofOrder.customerName}</span>
+                <span className="text-neutral-500 block truncate">{selectedProofOrder.customerEmail}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-neutral-400 font-medium block">Transferred Amount</span>
+                <span className="font-bold text-base text-neutral-900">
+                  PKR {Number(selectedProofOrder.totalAmount).toLocaleString()}
+                </span>
+                <span className="text-neutral-500 block">{selectedProofOrder.paymentStatus}</span>
+              </div>
+            </div>
+
+            {/* Screenshot Display */}
+            <div className="space-y-2">
+              <span className="text-xs font-semibold uppercase text-neutral-500 tracking-wider">
+                Submitted Screenshot Receipt
+              </span>
+              <div className="relative w-full aspect-4/5 rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-200">
+                {selectedProofOrder.paymentProof ? (
+                  <Image
+                    src={selectedProofOrder.paymentProof}
+                    alt="Payment receipt proof"
+                    fill
+                    className="object-contain"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-neutral-400 text-sm">
+                    No screenshot provided
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Approval / Rejection Actions */}
+            <div className="flex items-center justify-between pt-3 border-t border-neutral-100">
+              <button
+                type="button"
+                onClick={() => handleVerifyPayment(selectedProofOrder.id, "Rejected")}
+                disabled={isPending}
+                className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded-xl transition cursor-pointer"
+              >
+                Reject Payment
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedProofOrder(null)}
+                  className="px-4 py-2 text-xs font-medium text-neutral-600 hover:text-neutral-900 rounded-xl transition"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleVerifyPayment(selectedProofOrder.id, "Verified")}
+                  disabled={isPending}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer"
+                >
+                  {isPending ? "Updating..." : "Approve & Mark Verified"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
