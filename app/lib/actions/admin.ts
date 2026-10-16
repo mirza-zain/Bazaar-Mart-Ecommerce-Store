@@ -64,10 +64,16 @@ export async function ensureTablesExist() {
 
     await db.execute(sql`
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_code TEXT;
-      CREATE UNIQUE INDEX IF NOT EXISTS orders_order_code_idx ON orders (order_code);
+    `);
+
+    await db.execute(sql`
       UPDATE orders 
-      SET order_code = CONCAT('BAZ-', LPAD(FLOOR(RANDOM() * 9000 + 1000)::text, 4, '0')) 
+      SET order_code = CONCAT('BAZ-', LPAD((1000 + (id % 9000))::text, 4, '0')) 
       WHERE order_code IS NULL;
+    `);
+
+    await db.execute(sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS orders_order_code_idx ON orders (order_code);
     `);
 
     await db.execute(sql`
