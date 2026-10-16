@@ -220,12 +220,17 @@ export async function createOrderAction(input: CreateOrderInput): Promise<Create
 
     // Broadcast instant Web Push notification to store admin devices
     if (orderId) {
-      sendOrderNotificationToAdmin({
-        orderId,
-        customerName: input.customerName,
-        totalAmount: input.totalAmount,
-        itemsCount: input.items.length,
-      }).catch((err) => console.error("Error triggering push notification:", err));
+      try {
+        await sendOrderNotificationToAdmin({
+          orderId,
+          orderCode: finalOrderCode,
+          customerName: input.customerName,
+          totalAmount: input.totalAmount,
+          itemsCount: input.items.length,
+        });
+      } catch (pushErr) {
+        console.error("Error triggering push notification:", pushErr);
+      }
     }
 
     revalidatePath("/admin");

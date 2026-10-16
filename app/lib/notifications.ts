@@ -148,6 +148,7 @@ export async function sendPushToSubscription(
  */
 export async function sendOrderNotificationToAdmin(details: {
   orderId: number | string;
+  orderCode?: string;
   customerName: string;
   totalAmount: number | string;
   itemsCount: number;
@@ -163,13 +164,15 @@ export async function sendOrderNotificationToAdmin(details: {
       return { sent: 0 };
     }
 
+    const orderRef = details.orderCode ? details.orderCode : `#${details.orderId}`;
     const payload: PushNotificationPayload = {
-      title: `🛍️ New Order #${details.orderId} Placed!`,
+      title: `🛍️ New Order ${orderRef} Placed!`,
       body: `${details.customerName} ordered ${details.itemsCount} item(s) • Total: Rs. ${Number(details.totalAmount).toLocaleString()}`,
       icon: "/favicon.ico",
       url: `/admin/manageOrders`,
       data: {
         orderId: details.orderId,
+        orderCode: details.orderCode,
       },
     };
 

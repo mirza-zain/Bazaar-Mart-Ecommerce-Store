@@ -431,7 +431,7 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
                             </span>
                           </div>
                         )}
-                        <p className="text-xs text-neutral-400 mt-0.5">{dateStr}</p>
+                        <p className="text-xs text-neutral-400 mt-0.5" suppressHydrationWarning>{dateStr}</p>
                       </td>
 
                       {/* Customer Info */}
@@ -693,7 +693,7 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
                   {selectedDetailsOrder.orderCode && (
                     <p className="font-mono text-xs font-bold text-neutral-800">Tracking Code: {selectedDetailsOrder.orderCode}</p>
                   )}
-                  <p className="text-xs text-neutral-500">
+                  <p className="text-xs text-neutral-500" suppressHydrationWarning>
                     {selectedDetailsOrder.createdAt ? new Date(selectedDetailsOrder.createdAt).toLocaleDateString("en-PK", { dateStyle: "long" }) : ""}
                   </p>
                 </div>
@@ -726,7 +726,7 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
                     <Copy className="w-4 h-4" />
                   </button>
                 </div>
-                <p className="text-xs text-neutral-400">
+                <p className="text-xs text-neutral-400" suppressHydrationWarning>
                   Placed on {selectedDetailsOrder.createdAt ? new Date(selectedDetailsOrder.createdAt).toLocaleString("en-PK") : "Recent"}
                 </p>
               </div>
@@ -832,28 +832,52 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
             </div>
 
             {/* Financial Summary */}
-            <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100 space-y-2 text-xs">
-              <div className="flex justify-between text-neutral-600">
-                <span>Payment Method:</span>
-                <span className="font-semibold uppercase text-neutral-900">
-                  {selectedDetailsOrder.paymentMethod === "bank_transfer" ? "Bank Transfer" : "Cash on Delivery"}
-                </span>
-              </div>
-              {selectedDetailsOrder.discountCode && (
-                <div className="flex justify-between text-emerald-700">
-                  <span>Coupon Applied ({selectedDetailsOrder.discountCode}):</span>
-                  <span>-PKR {Number(selectedDetailsOrder.discountAmount || 0).toLocaleString()}</span>
+            {(() => {
+              const itemsSubtotal = (selectedDetailsOrder.items || []).reduce(
+                (sum: number, it: any) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1),
+                0
+              );
+              const discount = Number(selectedDetailsOrder.discountAmount) || 0;
+              const totalAmount = Number(selectedDetailsOrder.totalAmount) || 0;
+              const calculatedShipping = Math.max(0, totalAmount - (itemsSubtotal - discount));
+
+              return (
+                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100 space-y-2 text-xs">
+                  <div className="flex justify-between text-neutral-600">
+                    <span>Payment Method:</span>
+                    <span className="font-semibold uppercase text-neutral-900">
+                      {selectedDetailsOrder.paymentMethod === "bank_transfer" ? "Bank Transfer" : "Cash on Delivery"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-neutral-600">
+                    <span>Items Subtotal:</span>
+                    <span className="font-semibold text-neutral-900">
+                      PKR {itemsSubtotal.toLocaleString()}
+                    </span>
+                  </div>
+                  {selectedDetailsOrder.discountCode && (
+                    <div className="flex justify-between text-emerald-700">
+                      <span>Coupon Applied ({selectedDetailsOrder.discountCode}):</span>
+                      <span>-PKR {discount.toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-neutral-600">
+                    <span>Shipping:</span>
+                    {calculatedShipping > 0 ? (
+                      <span className="font-semibold text-neutral-900">
+                        PKR {calculatedShipping.toLocaleString()}
+                      </span>
+                    ) : (
+                      <span className="font-semibold text-emerald-600">FREE</span>
+                    )}
+                  </div>
+                  <div className="flex justify-between text-base font-bold text-neutral-900 pt-2 border-t border-neutral-200">
+                    <span>Grand Total:</span>
+                    <span>PKR {totalAmount.toLocaleString()}</span>
+                  </div>
                 </div>
-              )}
-              <div className="flex justify-between text-neutral-600">
-                <span>Shipping:</span>
-                <span className="font-semibold text-emerald-600">FREE</span>
-              </div>
-              <div className="flex justify-between text-base font-bold text-neutral-900 pt-2 border-t border-neutral-200">
-                <span>Grand Total:</span>
-                <span>PKR {Number(selectedDetailsOrder.totalAmount).toLocaleString()}</span>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* Bank Transfer Receipt Link if exists */}
             {selectedDetailsOrder.paymentMethod === "bank_transfer" && (
