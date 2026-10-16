@@ -18,6 +18,7 @@ import {
   Tag,
   AlertCircle,
   ExternalLink,
+  Loader2,
 } from "lucide-react";
 import { Product } from "@/app/db/schema";
 import {
@@ -29,6 +30,93 @@ import {
 
 interface ProductsManagerProps {
   initialProducts: Product[];
+}
+
+async function resizeImageBeforeUpload(file: File): Promise<File | Blob> {
+  if (!file.type.startsWith("image/") || file.type.includes("svg") || file.size < 800 * 1024) {
+    return file;
+  }
+
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const maxWidth = 1600;
+      const maxHeight = 1600;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth || height > maxHeight) {
+        if (width > height) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        } else {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (blob && blob.size < file.size) {
+            resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".webp"), { type: "image/webp" }));
+          } else {
+            resolve(file);
+          }
+        },
+        "image/webp",
+        0.88
+      );
+    };
+    img.onerror = () => resolve(file);
+    img.src = url;
+  });
+}
+
+async function uploadToCloudinaryClient(file: File): Promise<string | null> {
+  try {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dddsn39gd";
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "bazaario";
+
+    let uploadFile: File | Blob = file;
+    if (file.size > 800 * 1024) {
+      try {
+        uploadFile = await resizeImageBeforeUpload(file);
+      } catch (e) {
+        console.warn("Resize error:", e);
+      }
+    }
+
+    const formData = new FormData();
+    formData.append("file", uploadFile);
+    formData.append("upload_preset", uploadPreset);
+    formData.append("folder", "bazzario/products");
+
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (res.ok && (data.secure_url || data.url)) {
+      return data.secure_url || data.url;
+    }
+    console.warn("Cloudinary upload response:", data);
+    return null;
+  } catch (err) {
+    console.warn("Cloudinary direct fetch failed:", err);
+    return null;
+  }
 }
 
 export default function ProductsManager({ initialProducts }: ProductsManagerProps) {
@@ -67,6 +155,7 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
   const [formImage, setFormImage] = useState("");
   const [formImagePreview, setFormImagePreview] = useState<string | null>(null);
   const [formSelectedFile, setFormSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Keep state updated on server revalidation
   useEffect(() => {
@@ -114,17 +203,13 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
     const file = e.target.files?.[0];
     if (file) {
       setFormSelectedFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        setFormImagePreview(base64);
-        setFormImage(base64);
-      };
-      reader.readAsDataURL(file);
+      const previewUrl = URL.createObjectURL(file);
+      setFormImagePreview(previewUrl);
+      setFormImage("");
     }
   };
 
-  const handleSubmitForm = (e: React.FormEvent) => {
+  const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim() || !formPrice) {
       showToast("Please enter product name and price.", "error");
@@ -137,6 +222,21 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
       return;
     }
 
+    setIsUploading(true);
+    let finalImageUrl = formImage.trim();
+
+    // Direct Cloudinary upload from client to eliminate server payload limits
+    if (formSelectedFile) {
+      try {
+        const uploadedUrl = await uploadToCloudinaryClient(formSelectedFile);
+        if (uploadedUrl) {
+          finalImageUrl = uploadedUrl;
+        }
+      } catch (err) {
+        console.warn("Direct upload error, falling back to server:", err);
+      }
+    }
+
     const formData = new FormData();
     formData.append("name", formName.trim());
     formData.append("category", finalCategory);
@@ -144,51 +244,56 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
     formData.append("price", formPrice);
     formData.append("stock", formStock || "0");
     formData.append("description", formDescription.trim());
-    formData.append("image", formImage);
-    if (formSelectedFile) {
-      formData.append("file", formSelectedFile);
+    formData.append("image", finalImageUrl);
+
+    // If direct upload failed to produce URL and we still have a file, send the single file
+    if (!finalImageUrl && formSelectedFile) {
       formData.append("imageFile", formSelectedFile);
     }
 
     startTransition(async () => {
-      if (editingProduct) {
-        // Optimistic update
-        setProductsList((prev) =>
-          prev.map((p) =>
-            p.id === editingProduct.id
-              ? {
-                  ...p,
-                  name: formName.trim(),
-                  category: finalCategory,
-                  subCategory: formSubCategory.trim() || "General",
-                  price: formPrice,
-                  stock: formStock || "0",
-                  description: formDescription.trim(),
-                  image: formImagePreview || formImage,
-                }
-              : p
-          )
-        );
+      try {
+        if (editingProduct) {
+          // Optimistic update
+          setProductsList((prev) =>
+            prev.map((p) =>
+              p.id === editingProduct.id
+                ? {
+                    ...p,
+                    name: formName.trim(),
+                    category: finalCategory,
+                    subCategory: formSubCategory.trim() || "General",
+                    price: formPrice,
+                    stock: formStock || "0",
+                    description: formDescription.trim(),
+                    image: finalImageUrl || p.image,
+                  }
+                : p
+            )
+          );
 
-        const res = await updateProductAction(editingProduct.id, formData);
-        if (res.success) {
-          setIsAddModalOpen(false);
-          setEditingProduct(null);
-          showToast(`Product "${formName}" updated successfully!`);
-          router.refresh();
+          const res = await updateProductAction(editingProduct.id, formData);
+          if (res.success) {
+            setIsAddModalOpen(false);
+            setEditingProduct(null);
+            showToast(`Product "${formName}" updated successfully!`);
+            router.refresh();
+          } else {
+            showToast(res.error || "Failed to update product", "error");
+            setProductsList(initialProducts);
+          }
         } else {
-          showToast(res.error || "Failed to update product", "error");
-          setProductsList(initialProducts);
+          const res = await addProductAction(formData);
+          if (res.success) {
+            setIsAddModalOpen(false);
+            showToast(`Product "${formName}" created successfully!`);
+            router.refresh();
+          } else {
+            showToast(res.error || "Failed to add product", "error");
+          }
         }
-      } else {
-        const res = await addProductAction(formData);
-        if (res.success) {
-          setIsAddModalOpen(false);
-          showToast(`Product "${formName}" created successfully!`);
-          router.refresh();
-        } else {
-          showToast(res.error || "Failed to add product", "error");
-        }
+      } finally {
+        setIsUploading(false);
       }
     });
   };
@@ -916,10 +1021,24 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                 </button>
                 <button
                   type="submit"
-                  disabled={isPending}
+                  disabled={isPending || isUploading}
                   className="w-full sm:w-auto px-6 py-2.5 text-xs font-semibold bg-black hover:bg-neutral-800 text-white rounded-xl shadow-xs transition cursor-pointer text-center disabled:opacity-50"
                 >
-                  {isPending ? "Saving..." : editingProduct ? "Save Changes" : "Publish Product"}
+                  {isUploading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Uploading Image...</span>
+                    </span>
+                  ) : isPending ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Saving...</span>
+                    </span>
+                  ) : editingProduct ? (
+                    "Save Changes"
+                  ) : (
+                    "Publish Product"
+                  )}
                 </button>
               </div>
             </form>
