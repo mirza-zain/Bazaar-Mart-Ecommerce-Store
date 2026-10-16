@@ -81,7 +81,7 @@ export default function AdminClientView({
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
   const [description, setDescription] = useState("");
-  const [image, setImage] = useState("/images/img1.jpg");
+  const [image, setImage] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -143,7 +143,7 @@ export default function AdminClientView({
         setDescription("");
         setSelectedFile(null);
         setImagePreview(null);
-        setImage("/images/img1.jpg");
+        setImage("");
         showToast("Product published to catalog successfully!");
         router.refresh();
       } else {
@@ -942,7 +942,7 @@ export default function AdminClientView({
                   Product Image (Cloudinary)
                 </label>
 
-                {imagePreview || (image && !image.startsWith("data:")) ? (
+                {imagePreview || (image && image.trim() !== "" && !image.startsWith("data:")) ? (
                   <div className="relative mb-2.5 flex items-center gap-3 p-2.5 bg-neutral-50 rounded-xl border border-neutral-200">
                     <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-white shrink-0 border border-neutral-200">
                       <Image
@@ -964,7 +964,7 @@ export default function AdminClientView({
                       onClick={() => {
                         setSelectedFile(null);
                         setImagePreview(null);
-                        setImage("/images/img1.jpg");
+                        setImage("");
                       }}
                       className="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-200 rounded-lg transition"
                       title="Reset image"
