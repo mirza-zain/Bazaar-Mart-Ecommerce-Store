@@ -1,3 +1,5 @@
+'use server';
+
 import { db } from "@/app/lib/db";
 import { products, Product } from "@/app/db/schema";
 import { desc, eq } from "drizzle-orm";
@@ -80,5 +82,68 @@ export async function getProductById(id: number): Promise<Product | null> {
   } catch (error) {
     console.error("Error fetching product by id:", error);
     return null;
+  }
+}
+
+export type NavCategoryGroup = {
+  category: string;
+  href: string;
+  subCategories: { name: string; href: string }[];
+};
+
+export async function getStoreNavCategoriesAction(): Promise<NavCategoryGroup[]> {
+  try {
+    await connection();
+  } catch {}
+  try {
+    await ensureTablesExist();
+    const rows = await db
+      .select({
+        category: products.category,
+        subCategory: products.subCategory,
+      })
+      .from(products);
+
+    if (!rows || rows.length === 0) {
+      return [];
+    }
+
+    const catMap = new Map<string, Set<string>>();
+    for (const r of rows) {
+      const cat = r.category?.trim();
+      if (!cat) continue;
+      if (!catMap.has(cat)) {
+        catMap.set(cat, new Set());
+      }
+      const sub = r.subCategory?.trim();
+      if (sub && sub.toLowerCase() !== "general" && sub.toLowerCase() !== "default") {
+        catMap.get(cat)!.add(sub);
+      }
+    }
+
+    const navGroups: NavCategoryGroup[] = [];
+    for (const [catName, subSet] of catMap.entries()) {
+      const subCategories: { name: string; href: string }[] = Array.from(subSet).map((sub) => ({
+        name: sub,
+        href: `/products?category=${encodeURIComponent(catName)}&subCategory=${encodeURIComponent(sub)}`,
+      }));
+
+      // Add "All {category}" entry
+      subCategories.push({
+        name: `All ${catName}`,
+        href: `/products?category=${encodeURIComponent(catName)}`,
+      });
+
+      navGroups.push({
+        category: catName,
+        href: `/products?category=${encodeURIComponent(catName)}`,
+        subCategories,
+      });
+    }
+
+    return navGroups;
+  } catch (error) {
+    console.error("Error fetching nav categories from db:", error);
+    return [];
   }
 }

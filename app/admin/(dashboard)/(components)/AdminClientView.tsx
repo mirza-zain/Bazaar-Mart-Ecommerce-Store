@@ -1,24 +1,27 @@
 'use client';
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useEffect, useTransition, useMemo } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
+  ArrowRight,
   Ban,
-  Check,
   CheckCircle2,
   Clock,
-  CreditCard,
   DollarSign,
   Eye,
   Package,
   Plus,
   ReceiptText,
   Search,
+  Tag,
   Trash2,
   Upload,
-  ImageIcon,
   X,
+  AlertCircle,
+  TrendingUp,
 } from "lucide-react";
 import { Product, Order } from "@/app/db/schema";
 import {
@@ -26,8 +29,10 @@ import {
   deleteProductAction,
   updateOrderStatusAction,
   verifyPaymentAction,
+  updateProductStockAction,
   DashboardStats,
 } from "@/app/lib/actions/admin";
+import AdminInstallAndNotifyBar from "./AdminInstallAndNotifyBar";
 
 interface AdminClientViewProps {
   stats: DashboardStats;
@@ -40,17 +45,38 @@ export default function AdminClientView({
   products,
   orders,
 }: AdminClientViewProps) {
-  const [activeTab, setActiveTab] = useState<"products" | "orders">("products");
+  const router = useRouter();
+  const [ordersList, setOrdersList] = useState<Order[]>(orders);
+  const [productsList, setProductsList] = useState<Product[]>(products);
+  const [activeTab, setActiveTab] = useState<"orders" | "products">("orders");
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [selectedProofOrder, setSelectedProofOrder] = useState<Order | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  // Sync with server updates
+  useEffect(() => {
+    setOrdersList(orders);
+    setProductsList(products);
+  }, [orders, products]);
+
+  // Dynamic existing categories derived from current products
+  const existingCategories = useMemo(() => {
+    const defaultSet = new Set<string>(["Clothing", "Jewelry", "Accessories"]);
+    productsList.forEach((p) => {
+      if (p.category && p.category.trim()) {
+        defaultSet.add(p.category.trim());
+      }
+    });
+    return Array.from(defaultSet).sort();
+  }, [productsList]);
 
   // Form state
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Clothing");
+  const [isCreatingNewCategory, setIsCreatingNewCategory] = useState(false);
+  const [customNewCategory, setCustomNewCategory] = useState("");
   const [subCategory, setSubCategory] = useState("T-Shirt");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
@@ -58,6 +84,11 @@ export default function AdminClientView({
   const [image, setImage] = useState("/images/img1.jpg");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const showToast = (text: string, type: "success" | "error" = "success") => {
+    setStatusMessage({ text, type });
+    setTimeout(() => setStatusMessage(null), 3500);
+  };
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -73,35 +104,29 @@ export default function AdminClientView({
     }
   };
 
-  const filteredProducts = products.filter((p) => {
-    const matchesSearch =
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      categoryFilter === "all" ||
-      p.category.toLowerCase() === categoryFilter.toLowerCase();
-    return matchesSearch && matchesCategory;
-  });
-
-  const filteredOrders = orders.filter((o) => {
-    return (
-      o.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.status.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  });
-
   const handleAddProduct = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!name.trim() || !price) {
+      showToast("Name and price are required", "error");
+      return;
+    }
+
+    const finalCategory = (isCreatingNewCategory ? customNewCategory.trim() : category.trim());
+    if (!finalCategory) {
+      showToast("Please enter or select a category", "error");
+      return;
+    }
+
     const formData = new FormData();
-    formData.append("name", name);
-    formData.append("category", category);
-    formData.append("subCategory", subCategory);
+    formData.append("name", name.trim());
+    formData.append("category", finalCategory);
+    formData.append("subCategory", subCategory.trim() || "General");
     formData.append("price", price);
-    formData.append("stock", stock);
-    formData.append("description", description);
+    formData.append("stock", stock || "10");
+    formData.append("description", description.trim());
     formData.append("image", image);
     if (selectedFile) {
+      formData.append("file", selectedFile);
       formData.append("imageFile", selectedFile);
     }
 
@@ -110,69 +135,161 @@ export default function AdminClientView({
       if (res.success) {
         setIsModalOpen(false);
         setName("");
+        setCategory(existingCategories[0] || "Clothing");
+        setIsCreatingNewCategory(false);
+        setCustomNewCategory("");
         setPrice("");
         setStock("");
         setDescription("");
         setSelectedFile(null);
         setImagePreview(null);
         setImage("/images/img1.jpg");
-        setStatusMessage("Product added successfully!");
-        setTimeout(() => setStatusMessage(null), 3000);
+        showToast("Product published to catalog successfully!");
+        router.refresh();
       } else {
-        alert(res.error || "Failed to add product");
+        showToast(res.error || "Failed to add product", "error");
       }
     });
   };
 
-  const handleDeleteProduct = (id: number) => {
-    if (!confirm("Are you sure you want to delete this product?")) return;
+  const handleDeleteProduct = (id: number, prodName: string) => {
+    if (!confirm(`Are you sure you want to delete "${prodName}"?`)) return;
+
+    setProductsList((prev) => prev.filter((p) => p.id !== id));
     startTransition(async () => {
-      await deleteProductAction(id);
-      setStatusMessage("Product deleted.");
-      setTimeout(() => setStatusMessage(null), 3000);
+      const res = await deleteProductAction(id);
+      if (res.success) {
+        showToast(`Product "${prodName}" deleted.`);
+        router.refresh();
+      } else {
+        showToast("Failed to delete product.", "error");
+        setProductsList(products);
+      }
     });
   };
 
   const handleUpdateOrderStatus = (orderId: number, newStatus: string) => {
-    startTransition(async () => {
-      await updateOrderStatusAction(orderId, newStatus);
-      setStatusMessage("Order status updated.");
-      setTimeout(() => setStatusMessage(null), 3000);
-    });
-  };
+    // Optimistic update
+    setOrdersList((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+    );
 
-  const handleVerifyPayment = (orderId: number, status: "Verified" | "Rejected") => {
     startTransition(async () => {
-      const res = await verifyPaymentAction(orderId, status);
+      const res = await updateOrderStatusAction(orderId, newStatus);
       if (res.success) {
-        setStatusMessage(`Payment marked as ${status}.`);
-        if (selectedProofOrder && selectedProofOrder.id === orderId) {
-          setSelectedProofOrder(null);
-        }
-        setTimeout(() => setStatusMessage(null), 3000);
+        showToast(`Order #ORD-${orderId.toString().padStart(4, "0")} marked as ${newStatus}`);
+        router.refresh();
       } else {
-        alert(res.error || "Failed to update payment status.");
+        showToast(res.error || "Failed to update status", "error");
+        setOrdersList(orders);
       }
     });
   };
 
+  const handleVerifyPayment = (orderId: number, status: "Verified" | "Rejected") => {
+    setOrdersList((prev) =>
+      prev.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              paymentStatus: status,
+              status: status === "Verified" ? "Processing" : o.status,
+            }
+          : o
+      )
+    );
+    if (selectedProofOrder?.id === orderId) {
+      setSelectedProofOrder(null);
+    }
+
+    startTransition(async () => {
+      const res = await verifyPaymentAction(orderId, status);
+      if (res.success) {
+        showToast(
+          status === "Verified"
+            ? `Bank transfer for Order #ORD-${orderId.toString().padStart(4, "0")} approved!`
+            : `Bank transfer for Order #ORD-${orderId.toString().padStart(4, "0")} rejected.`
+        );
+        router.refresh();
+      } else {
+        showToast(res.error || "Failed to update payment status.", "error");
+        setOrdersList(orders);
+      }
+    });
+  };
+
+  const handleQuickRestock = (product: Product, delta: number) => {
+    const current = Number(product.stock) || 0;
+    const newStock = Math.max(0, current + delta);
+
+    setProductsList((prev) =>
+      prev.map((p) => (p.id === product.id ? { ...p, stock: newStock.toString() } : p))
+    );
+
+    startTransition(async () => {
+      const res = await updateProductStockAction(product.id, newStock);
+      if (res.success) {
+        showToast(`Restocked ${product.name} to ${newStock} units.`);
+        router.refresh();
+      } else {
+        showToast("Failed to restock product", "error");
+        setProductsList(products);
+      }
+    });
+  };
+
+  // Pending bank payments needing verification
+  const pendingVerifications = ordersList.filter(
+    (o) => o.paymentMethod === "bank_transfer" && o.paymentStatus === "Pending"
+  );
+
+  const filteredOrders = ordersList.filter((o) => {
+    const query = searchTerm.toLowerCase().trim();
+    if (!query) return true;
+    const formattedId = `#ORD-${o.id.toString().padStart(4, "0")}`.toLowerCase();
+    return (
+      formattedId.includes(query) ||
+      o.id.toString() === query ||
+      o.customerName.toLowerCase().includes(query) ||
+      o.customerEmail.toLowerCase().includes(query) ||
+      o.status.toLowerCase().includes(query)
+    );
+  });
+
+  const filteredProducts = productsList.filter((p) => {
+    const query = searchTerm.toLowerCase().trim();
+    if (!query) return true;
+    return (
+      p.name.toLowerCase().includes(query) ||
+      p.category.toLowerCase().includes(query) ||
+      (p.subCategory && p.subCategory.toLowerCase().includes(query))
+    );
+  });
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Top Banner & Quick Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-200">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
-            Store Overview
+            Store Command Center
           </h1>
           <p className="text-sm text-neutral-500 mt-1">
-            Real-time analytics and inventory powered by Neon PostgreSQL.
+            Real-time analytics, inventory management, and instant order fulfillment.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            href="/admin/manageOrders"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-sm font-semibold rounded-xl transition"
+          >
+            <ReceiptText className="w-4 h-4 text-neutral-600" />
+            <span>Manage All Orders</span>
+          </Link>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-black hover:bg-neutral-800 text-white text-sm font-medium rounded-xl shadow-sm transition cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-black hover:bg-neutral-800 text-white text-sm font-semibold rounded-xl shadow-xs transition cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add Product</span>
@@ -180,27 +297,71 @@ export default function AdminClientView({
         </div>
       </div>
 
-      {/* Status Feedback Toast */}
+      {/* Admin Mobile Install & Web Push Notification Quick Setup */}
+      <AdminInstallAndNotifyBar />
+
+      {/* Toast Feedback */}
       {statusMessage && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm flex items-center gap-2 animate-fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>{statusMessage}</span>
+        <div
+          className={`p-3.5 rounded-2xl text-sm flex items-center justify-between border shadow-sm transition animate-fade-in ${
+            statusMessage.type === "success"
+              ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+              : "bg-rose-50 border-rose-200 text-rose-900"
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            {statusMessage.type === "success" ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+            )}
+            <span className="font-medium">{statusMessage.text}</span>
+          </div>
+          <button onClick={() => setStatusMessage(null)} className="text-neutral-400 hover:text-neutral-800 p-1">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Urgent Bank Transfer Approval Alert */}
+      {pendingVerifications.length > 0 && (
+        <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <span className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+              {pendingVerifications.length}
+            </span>
+            <div>
+              <p className="font-bold text-sm text-neutral-900">
+                Action Required: {pendingVerifications.length} Bank Transfer {pendingVerifications.length === 1 ? "Receipt" : "Receipts"} Awaiting Approval
+              </p>
+              <p className="text-xs text-neutral-600">
+                Customers have placed bank transfer orders. Review screenshots to advance them to Processing.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/admin/manageOrders"
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-xl shadow-xs transition self-start sm:self-auto shrink-0"
+          >
+            Review in Orders Console
+          </Link>
         </div>
       )}
 
       {/* 4 Metric Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 bg-white rounded-2xl border border-neutral-200 shadow-xs flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
             <DollarSign className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
               Total Revenue
             </p>
             <p className="text-2xl font-bold text-neutral-900 mt-0.5">
               PKR {stats.totalRevenue.toLocaleString()}
             </p>
+            <span className="text-[11px] text-emerald-600 font-medium">Recorded Sales</span>
           </div>
         </div>
 
@@ -209,12 +370,15 @@ export default function AdminClientView({
             <ReceiptText className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
               Total Orders
             </p>
             <p className="text-2xl font-bold text-neutral-900 mt-0.5">
               {stats.totalOrders}
             </p>
+            <Link href="/admin/manageOrders" className="text-[11px] text-neutral-500 hover:text-black font-medium underline">
+              View All Orders &rarr;
+            </Link>
           </div>
         </div>
 
@@ -223,12 +387,15 @@ export default function AdminClientView({
             <Package className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
               Active Products
             </p>
             <p className="text-2xl font-bold text-neutral-900 mt-0.5">
               {stats.totalProducts}
             </p>
+            <Link href="/admin/manageProducts" className="text-[11px] text-neutral-500 hover:text-black font-medium underline">
+              Manage Catalog &rarr;
+            </Link>
           </div>
         </div>
 
@@ -237,185 +404,126 @@ export default function AdminClientView({
             <AlertTriangle className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
               Low Stock Alert
             </p>
             <p className="text-2xl font-bold text-neutral-900 mt-0.5">
               {stats.lowStockCount}
             </p>
+            <span className="text-[11px] text-amber-600 font-medium">&lt; 10 units left</span>
           </div>
         </div>
       </div>
 
-      {/* Navigation Tabs and Search Bar */}
-      <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-xs space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          {/* Tabs */}
+      {/* Quick Action Navigation Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Link
+          href="/admin/manageOrders"
+          className="p-4 bg-white rounded-2xl border border-neutral-200 hover:border-black/30 shadow-xs transition group flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center text-neutral-800">
+              <ReceiptText className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-bold text-sm text-neutral-900">Manage Orders Console</p>
+              <p className="text-xs text-neutral-500">Full shipping addresses, slips & invoices</p>
+            </div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-neutral-400 group-hover:text-black group-hover:translate-x-0.5 transition" />
+        </Link>
+
+        <Link
+          href="/admin/manageProducts"
+          className="p-4 bg-white rounded-2xl border border-neutral-200 hover:border-black/30 shadow-xs transition group flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center text-neutral-800">
+              <Package className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-bold text-sm text-neutral-900">Manage Catalog & Inventory</p>
+              <p className="text-xs text-neutral-500">Edit titles, prices, stock & photos</p>
+            </div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-neutral-400 group-hover:text-black group-hover:translate-x-0.5 transition" />
+        </Link>
+
+        <Link
+          href="/admin/pricing"
+          className="p-4 bg-white rounded-2xl border border-neutral-200 hover:border-black/30 shadow-xs transition group flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center text-neutral-800">
+              <Tag className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-bold text-sm text-neutral-900">Pricing & Discount Rules</p>
+              <p className="text-xs text-neutral-500">Create promo codes & spend rules</p>
+            </div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-neutral-400 group-hover:text-black group-hover:translate-x-0.5 transition" />
+        </Link>
+      </div>
+
+      {/* Main Tabs Container */}
+      <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-neutral-100">
           <div className="flex items-center gap-2 p-1 bg-neutral-100 rounded-xl w-fit">
             <button
-              onClick={() => setActiveTab("products")}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition cursor-pointer ${
-                activeTab === "products"
-                  ? "bg-white text-neutral-900 shadow-xs"
-                  : "text-neutral-600 hover:text-neutral-900"
-              }`}
-            >
-              Products ({products.length})
-            </button>
-            <button
               onClick={() => setActiveTab("orders")}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition cursor-pointer ${
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
                 activeTab === "orders"
                   ? "bg-white text-neutral-900 shadow-xs"
                   : "text-neutral-600 hover:text-neutral-900"
               }`}
             >
-              Recent Orders ({orders.length})
+              Recent Orders ({ordersList.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("products")}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
+                activeTab === "products"
+                  ? "bg-white text-neutral-900 shadow-xs"
+                  : "text-neutral-600 hover:text-neutral-900"
+              }`}
+            >
+              Recent Products ({productsList.length})
             </button>
           </div>
 
-          {/* Search & Category Filter */}
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="relative flex-1 sm:w-64">
-              <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder={`Search ${activeTab}...`}
-                className="w-full pl-9 pr-3 py-2 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black transition"
-              />
-            </div>
-
-            {activeTab === "products" && (
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="py-2 px-3 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black text-neutral-700"
-              >
-                <option value="all">All Categories</option>
-                <option value="Clothing">Clothing</option>
-                <option value="Jewelry">Jewelry</option>
-                <option value="Accessories">Accessories</option>
-              </select>
-            )}
+          <div className="relative flex-1 sm:w-64">
+            <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={`Search ${activeTab}...`}
+              className="w-full pl-9 pr-3 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:border-black"
+            />
           </div>
         </div>
 
-        {/* Tab 1: Products Table */}
-        {activeTab === "products" && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-neutral-50 text-neutral-500 font-medium border-y border-neutral-100 uppercase text-xs">
-                <tr>
-                  <th className="py-3 px-4">Product</th>
-                  <th className="py-3 px-4">Category</th>
-                  <th className="py-3 px-4">Price</th>
-                  <th className="py-3 px-4">Stock</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100">
-                {filteredProducts.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-12 text-center text-neutral-500">
-                      <Package className="w-8 h-8 mx-auto text-neutral-300 mb-2" />
-                      <p>No products found in database.</p>
-                      <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="mt-3 text-sm text-black underline font-medium cursor-pointer"
-                      >
-                        Add your first product
-                      </button>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredProducts.map((p) => {
-                    const isLowStock = Number(p.stock) < 10;
-                    return (
-                      <tr key={p.id} className="hover:bg-neutral-50/60 transition">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-3">
-                            <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-neutral-100 shrink-0 border border-neutral-200">
-                              <Image
-                                src={p.image || "/images/img1.jpg"}
-                                alt={p.name}
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                            <div>
-                              <p className="font-semibold text-neutral-900">{p.name}</p>
-                              <p className="text-xs text-neutral-400">{p.subCategory}</p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-3 px-4">
-                          <span className="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-100 text-neutral-700">
-                            {p.category}
-                          </span>
-                        </td>
-
-                        <td className="py-3 px-4 font-semibold text-neutral-900">
-                          PKR {Number(p.price).toLocaleString()}
-                        </td>
-
-                        <td className="py-3 px-4">
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                              isLowStock
-                                ? "bg-amber-100 text-amber-800"
-                                : "bg-emerald-100 text-emerald-800"
-                            }`}
-                          >
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                isLowStock ? "bg-amber-600" : "bg-emerald-600"
-                              }`}
-                            />
-                            {p.stock} in stock
-                          </span>
-                        </td>
-
-                        <td className="py-3 px-4 text-right">
-                          <button
-                            onClick={() => handleDeleteProduct(p.id)}
-                            disabled={isPending}
-                            className="p-1.5 text-neutral-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
-                            title="Delete Product"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Tab 2: Orders Table */}
+        {/* Tab 1: Recent Orders */}
         {activeTab === "orders" && (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-neutral-50 text-neutral-500 font-medium border-y border-neutral-100 uppercase text-xs">
+              <thead className="bg-neutral-50 text-neutral-500 font-semibold border-y border-neutral-100 uppercase text-[11px] tracking-wider">
                 <tr>
                   <th className="py-3 px-4">Order ID</th>
                   <th className="py-3 px-4">Customer</th>
-                  <th className="py-3 px-4">Payment & Total</th>
-                  <th className="py-3 px-4">Payment Proof & Approval</th>
-                  <th className="py-3 px-4">Fulfillment</th>
+                  <th className="py-3 px-4">Payment</th>
+                  <th className="py-3 px-4">Bank Slip Verification</th>
+                  <th className="py-3 px-4">Fulfillment Status</th>
+                  <th className="py-3 px-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
                 {filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-neutral-500">
+                    <td colSpan={6} className="py-12 text-center text-neutral-500">
                       <ReceiptText className="w-8 h-8 mx-auto text-neutral-300 mb-2" />
-                      <p>No orders recorded yet.</p>
+                      <p>No orders found matching search criteria.</p>
                     </td>
                   </tr>
                 ) : (
@@ -426,67 +534,41 @@ export default function AdminClientView({
 
                     return (
                       <tr key={o.id} className="hover:bg-neutral-50/60 transition">
-                        <td className="py-3 px-4 font-mono font-medium text-neutral-700">
+                        <td className="py-3 px-4 font-mono font-bold text-neutral-800">
                           #ORD-{o.id.toString().padStart(4, "0")}
                         </td>
 
                         <td className="py-3 px-4">
                           <p className="font-semibold text-neutral-900">{o.customerName}</p>
-                          <p className="text-xs text-neutral-400">{o.customerEmail}</p>
-                          {o.phone && <p className="text-xs text-neutral-500 font-mono mt-0.5">{o.phone}</p>}
-                          {o.city && (
-                            <p className="text-xs text-neutral-400 truncate max-w-[220px]" title={o.address ? `${o.address}, ${o.city}` : o.city}>
-                              {o.city}{o.address ? ` • ${o.address}` : ""}
-                            </p>
-                          )}
-                          {o.items && o.items.length > 0 && (
-                            <div className="mt-1.5 flex flex-wrap gap-1 max-w-[280px]">
-                              {o.items.map((it: any, idx: number) => (
-                                <span
-                                  key={idx}
-                                  className="inline-block text-[10px] bg-neutral-100 text-neutral-700 px-1.5 py-0.5 rounded border border-neutral-200"
-                                  title={`${it.name} (Qty: ${it.quantity}${it.variant ? `, ${it.variant}` : ""})`}
-                                >
-                                  {it.quantity}x {it.name.length > 18 ? `${it.name.slice(0, 18)}...` : it.name}
-                                  {it.variant && ` (${it.variant})`}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                          <p className="text-xs text-neutral-400 truncate max-w-[200px]">{o.customerEmail}</p>
+                          {o.phone && <p className="text-[11px] text-neutral-500 font-mono">{o.phone}</p>}
                         </td>
 
                         <td className="py-3 px-4">
-                          <p className="font-semibold text-neutral-900">
+                          <p className="font-bold text-neutral-900">
                             PKR {Number(o.totalAmount).toLocaleString()}
                           </p>
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <span
-                              className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                isBankTransfer
-                                  ? "bg-purple-100 text-purple-800"
-                                  : "bg-neutral-100 text-neutral-700"
-                              }`}
-                            >
-                              {isBankTransfer ? "Bank Transfer" : "COD"}
-                            </span>
-                            {o.discountCode && (
-                              <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-medium">
-                                {o.discountCode} (-PKR {Number(o.discountAmount || 0).toLocaleString()})
-                              </span>
-                            )}
-                          </div>
+                          <span
+                            className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              isBankTransfer
+                                ? "bg-purple-100 text-purple-900 border border-purple-200"
+                                : "bg-neutral-100 text-neutral-700"
+                            }`}
+                          >
+                            {isBankTransfer ? "Bank Transfer" : "COD"}
+                          </span>
                         </td>
 
                         <td className="py-3 px-4">
                           {isBankTransfer ? (
                             <div className="space-y-1.5">
                               <span
-                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                                   isVerified
                                     ? "bg-emerald-100 text-emerald-800"
                                     : isRejected
                                     ? "bg-rose-100 text-rose-800"
-                                    : "bg-amber-100 text-amber-800"
+                                    : "bg-amber-100 text-amber-800 animate-pulse"
                                 }`}
                               >
                                 {isVerified ? (
@@ -502,47 +584,34 @@ export default function AdminClientView({
                                 ) : (
                                   <>
                                     <Clock className="w-3 h-3 text-amber-600" />
-                                    <span>Pending Verification</span>
+                                    <span>Needs Proof</span>
                                   </>
                                 )}
                               </span>
 
-                              <div className="flex items-center gap-2 pt-1">
+                              <div className="flex items-center gap-1.5 pt-0.5">
                                 {o.paymentProof && (
                                   <button
                                     onClick={() => setSelectedProofOrder(o)}
-                                    className="inline-flex items-center gap-1 text-xs text-neutral-700 hover:text-black font-medium underline cursor-pointer"
+                                    className="p-1 text-neutral-500 hover:text-black rounded cursor-pointer"
+                                    title="View Bank Slip"
                                   >
                                     <Eye className="w-3.5 h-3.5" />
-                                    <span>View Receipt</span>
                                   </button>
                                 )}
-
                                 {!isVerified && (
                                   <button
                                     onClick={() => handleVerifyPayment(o.id, "Verified")}
                                     disabled={isPending}
-                                    className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-lg transition cursor-pointer"
-                                    title="Approve Bank Payment"
+                                    className="px-2 py-0.8 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold rounded-md transition cursor-pointer"
                                   >
                                     Approve
-                                  </button>
-                                )}
-
-                                {!isRejected && !isVerified && (
-                                  <button
-                                    onClick={() => handleVerifyPayment(o.id, "Rejected")}
-                                    disabled={isPending}
-                                    className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-semibold rounded-lg transition cursor-pointer"
-                                    title="Reject Payment"
-                                  >
-                                    Reject
                                   </button>
                                 )}
                               </div>
                             </div>
                           ) : (
-                            <span className="text-xs text-neutral-500">Collect on delivery</span>
+                            <span className="text-xs text-neutral-400">Collect on delivery</span>
                           )}
                         </td>
 
@@ -550,19 +619,33 @@ export default function AdminClientView({
                           <select
                             value={o.status}
                             onChange={(e) => handleUpdateOrderStatus(o.id, e.target.value)}
-                            className={`text-xs font-semibold py-1 px-2.5 rounded-lg border transition ${
+                            className={`text-xs font-semibold py-1 px-2.5 rounded-lg border transition cursor-pointer ${
                               o.status === "Delivered"
-                                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                ? "bg-emerald-50 text-emerald-900 border-emerald-200"
+                                : o.status === "Shipped"
+                                ? "bg-indigo-50 text-indigo-900 border-indigo-200"
                                 : o.status === "Processing"
-                                ? "bg-blue-50 text-blue-800 border-blue-200"
-                                : "bg-amber-50 text-amber-800 border-amber-200"
+                                ? "bg-blue-50 text-blue-900 border-blue-200"
+                                : o.status === "Cancelled"
+                                ? "bg-rose-50 text-rose-900 border-rose-200"
+                                : "bg-amber-50 text-amber-900 border-amber-200"
                             }`}
                           >
                             <option value="Pending">Pending</option>
                             <option value="Processing">Processing</option>
+                            <option value="Shipped">Shipped</option>
                             <option value="Delivered">Delivered</option>
                             <option value="Cancelled">Cancelled</option>
                           </select>
+                        </td>
+
+                        <td className="py-3 px-4 text-right">
+                          <Link
+                            href="/admin/manageOrders"
+                            className="text-xs font-semibold text-neutral-600 hover:text-black underline"
+                          >
+                            Full Invoice
+                          </Link>
                         </td>
                       </tr>
                     );
@@ -570,14 +653,146 @@ export default function AdminClientView({
                 )}
               </tbody>
             </table>
+
+            <div className="pt-3 text-right">
+              <Link
+                href="/admin/manageOrders"
+                className="text-xs font-bold text-neutral-900 hover:underline inline-flex items-center gap-1"
+              >
+                <span>Go to Dedicated Orders Manager Console</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 2: Recent Products */}
+        {activeTab === "products" && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-neutral-50 text-neutral-500 font-semibold border-y border-neutral-100 uppercase text-[11px] tracking-wider">
+                <tr>
+                  <th className="py-3 px-4">Product</th>
+                  <th className="py-3 px-4">Category</th>
+                  <th className="py-3 px-4">Price</th>
+                  <th className="py-3 px-4">Stock & Restock</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {filteredProducts.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-neutral-500">
+                      <Package className="w-8 h-8 mx-auto text-neutral-300 mb-2" />
+                      <p>No products match your search.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredProducts.map((p) => {
+                    const stockNum = Number(p.stock) || 0;
+                    const isLowStock = stockNum < 10;
+                    return (
+                      <tr key={p.id} className="hover:bg-neutral-50/60 transition">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="relative w-11 h-11 rounded-lg overflow-hidden bg-neutral-100 shrink-0 border border-neutral-200">
+                              <Image
+                                src={p.image || "/images/img1.jpg"}
+                                alt={p.name}
+                                fill
+                                unoptimized
+                                className="object-cover"
+                              />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-neutral-900">{p.name}</p>
+                              <p className="text-xs text-neutral-400">{p.subCategory || "General"}</p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <span className="inline-block px-2.5 py-1 rounded-full text-xs font-semibold bg-neutral-100 text-neutral-800">
+                            {p.category}
+                          </span>
+                        </td>
+
+                        <td className="py-3 px-4 font-bold text-neutral-900">
+                          PKR {Number(p.price).toLocaleString()}
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-0.8 rounded-full text-xs font-semibold ${
+                                isLowStock
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-emerald-100 text-emerald-800"
+                              }`}
+                            >
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  isLowStock ? "bg-amber-600" : "bg-emerald-600"
+                                }`}
+                              />
+                              {stockNum} in stock
+                            </span>
+
+                            {isLowStock && (
+                              <button
+                                onClick={() => handleQuickRestock(p, 10)}
+                                disabled={isPending}
+                                className="px-2 py-0.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-[10px] font-bold rounded-md transition cursor-pointer"
+                                title="Quick restock +10"
+                              >
+                                +10 Restock
+                              </button>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Link
+                              href="/admin/manageProducts"
+                              className="text-xs font-semibold text-neutral-600 hover:text-black underline"
+                            >
+                              Edit
+                            </Link>
+                            <button
+                              onClick={() => handleDeleteProduct(p.id, p.name)}
+                              disabled={isPending}
+                              className="p-1.5 text-neutral-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                              title="Delete Product"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+
+            <div className="pt-3 text-right">
+              <Link
+                href="/admin/manageProducts"
+                className="text-xs font-bold text-neutral-900 hover:underline inline-flex items-center gap-1"
+              >
+                <span>Go to Dedicated Catalog & Inventory Manager</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </div>
         )}
       </div>
 
       {/* Add Product Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-neutral-200 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-neutral-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
               <h2 className="text-xl font-bold text-neutral-900">Add New Product</h2>
               <button
@@ -590,7 +805,7 @@ export default function AdminClientView({
 
             <form onSubmit={handleAddProduct} className="space-y-4 mt-4">
               <div>
-                <label className="block text-xs font-medium text-neutral-700 uppercase mb-1">
+                <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
                   Product Name *
                 </label>
                 <input
@@ -598,44 +813,100 @@ export default function AdminClientView({
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Oversized Heavyweight Tee"
-                  className="w-full px-3 py-2 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black"
+                  placeholder="e.g. Heavyweight Acid Wash Boxy Tee"
+                  className="w-full px-3.5 py-2.5 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:border-black font-medium"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-neutral-700 uppercase mb-1">
-                    Category *
-                  </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black"
-                  >
-                    <option value="Clothing">Clothing</option>
-                    <option value="Jewelry">Jewelry</option>
-                    <option value="Accessories">Accessories</option>
-                  </select>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold uppercase text-neutral-700">
+                      Category *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextState = !isCreatingNewCategory;
+                        setIsCreatingNewCategory(nextState);
+                        if (nextState) {
+                          setCustomNewCategory("");
+                        } else {
+                          setCategory(existingCategories[0] || "Clothing");
+                        }
+                      }}
+                      className="text-[11px] font-semibold text-neutral-800 hover:text-black hover:underline cursor-pointer flex items-center gap-1"
+                    >
+                      {isCreatingNewCategory ? (
+                        <span>Choose existing</span>
+                      ) : (
+                        <>
+                          <Plus className="w-3 h-3" />
+                          <span>+ New Category</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {isCreatingNewCategory ? (
+                    <div className="space-y-1">
+                      <input
+                        type="text"
+                        required
+                        value={customNewCategory}
+                        onChange={(e) => {
+                          setCustomNewCategory(e.target.value);
+                          setCategory(e.target.value);
+                        }}
+                        placeholder="Type new category (e.g. Footwear, Hoodies)..."
+                        className="w-full px-3.5 py-2.5 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:border-black font-medium"
+                        autoFocus
+                      />
+                      <p className="text-[10px] text-neutral-400">
+                        Will be created and available storewide
+                      </p>
+                    </div>
+                  ) : (
+                    <select
+                      value={category}
+                      onChange={(e) => {
+                        if (e.target.value === "__create_new__") {
+                          setIsCreatingNewCategory(true);
+                          setCustomNewCategory("");
+                          setCategory("");
+                        } else {
+                          setCategory(e.target.value);
+                        }
+                      }}
+                      className="w-full px-3.5 py-2.5 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:border-black cursor-pointer"
+                    >
+                      {existingCategories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                      <option value="__create_new__">+ Create New Category...</option>
+                    </select>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-neutral-700 uppercase mb-1">
+                  <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
                     Sub-Category
                   </label>
                   <input
                     type="text"
                     value={subCategory}
                     onChange={(e) => setSubCategory(e.target.value)}
-                    placeholder="e.g. Hoodies, Chains"
-                    className="w-full px-3 py-2 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black"
+                    placeholder="e.g. Graphic Tees"
+                    className="w-full px-3.5 py-2.5 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:border-black"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-neutral-700 uppercase mb-1">
+                  <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
                     Price (PKR) *
                   </label>
                   <input
@@ -645,12 +916,12 @@ export default function AdminClientView({
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                     placeholder="2500"
-                    className="w-full px-3 py-2 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black"
+                    className="w-full px-3.5 py-2.5 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:border-black font-semibold"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-neutral-700 uppercase mb-1">
+                  <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
                     Initial Stock *
                   </label>
                   <input
@@ -660,13 +931,14 @@ export default function AdminClientView({
                     value={stock}
                     onChange={(e) => setStock(e.target.value)}
                     placeholder="50"
-                    className="w-full px-3 py-2 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black"
+                    className="w-full px-3.5 py-2.5 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:border-black font-semibold"
                   />
                 </div>
               </div>
 
+              {/* Cloudinary Image Input */}
               <div>
-                <label className="block text-xs font-medium text-neutral-700 uppercase mb-1">
+                <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
                   Product Image (Cloudinary)
                 </label>
 
@@ -705,7 +977,7 @@ export default function AdminClientView({
                 <div className="flex gap-2">
                   <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-semibold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-xl cursor-pointer transition border border-dashed border-neutral-300">
                     <Upload className="w-4 h-4 text-neutral-500" />
-                    <span>Upload Image from Device</span>
+                    <span>Upload Image from Device (Cloudinary)</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -723,14 +995,14 @@ export default function AdminClientView({
                       setImagePreview(null);
                       setSelectedFile(null);
                     }}
-                    placeholder="Or enter image URL / Cloudinary URL"
-                    className="w-full px-3 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-black"
+                    placeholder="Or enter direct image URL / Cloudinary URL"
+                    className="w-full px-3 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:border-black"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-neutral-700 uppercase mb-1">
+                <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
                   Description
                 </label>
                 <textarea
@@ -738,7 +1010,7 @@ export default function AdminClientView({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Enter product details, fabric, and sizing..."
-                  className="w-full px-3 py-2 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black"
+                  className="w-full px-3.5 py-2 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:border-black"
                 />
               </div>
 
@@ -746,14 +1018,14 @@ export default function AdminClientView({
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 rounded-xl transition"
+                  className="px-4 py-2 text-xs font-semibold text-neutral-600 hover:text-neutral-900 rounded-xl transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="px-5 py-2 text-sm font-medium bg-black hover:bg-neutral-800 text-white rounded-xl shadow-xs transition"
+                  className="px-5 py-2 text-xs font-semibold bg-black hover:bg-neutral-800 text-white rounded-xl shadow-xs transition"
                 >
                   {isPending ? "Saving..." : "Save Product"}
                 </button>
@@ -763,14 +1035,14 @@ export default function AdminClientView({
         </div>
       )}
 
-      {/* Payment Screenshot Proof Inspection Modal */}
+      {/* Payment Screenshot Proof Modal */}
       {selectedProofOrder && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-neutral-200 max-h-[92vh] overflow-y-auto space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
               <div>
                 <h3 className="text-lg font-bold text-neutral-900">
-                  Payment Transfer Screenshot
+                  Bank Transfer Screenshot
                 </h3>
                 <p className="text-xs text-neutral-500 font-mono">
                   Order #ORD-{selectedProofOrder.id.toString().padStart(4, "0")}
@@ -785,7 +1057,6 @@ export default function AdminClientView({
               </button>
             </div>
 
-            {/* Customer & Order details summary */}
             <div className="grid grid-cols-2 gap-3 p-3 bg-neutral-50 rounded-2xl text-xs">
               <div>
                 <span className="text-neutral-400 font-medium block">Customer</span>
@@ -801,28 +1072,25 @@ export default function AdminClientView({
               </div>
             </div>
 
-            {/* Screenshot Display */}
             <div className="space-y-2">
               <span className="text-xs font-semibold uppercase text-neutral-500 tracking-wider">
                 Submitted Screenshot Receipt
               </span>
-              <div className="relative w-full aspect-4/5 rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-200">
+              <div className="relative w-full aspect-4/5 rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-200 flex items-center justify-center">
                 {selectedProofOrder.paymentProof ? (
                   <Image
                     src={selectedProofOrder.paymentProof}
                     alt="Payment receipt proof"
                     fill
+                    unoptimized
                     className="object-contain"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-neutral-400 text-sm">
-                    No screenshot provided
-                  </div>
+                  <div className="text-neutral-400 text-sm">No screenshot provided</div>
                 )}
               </div>
             </div>
 
-            {/* Approval / Rejection Actions */}
             <div className="flex items-center justify-between pt-3 border-t border-neutral-100">
               <button
                 type="button"

@@ -1,5 +1,6 @@
 import Navbar from "./(component)/Navbar";
 import Footer from "./(component)/Footer";
+import CartDrawer from "./(component)/CartDrawer";
 
 export default function StoreLayout({
   children,
@@ -13,6 +14,7 @@ export default function StoreLayout({
         {children}
       </main>
       <Footer />
+      <CartDrawer />
     </div>
   );
 }

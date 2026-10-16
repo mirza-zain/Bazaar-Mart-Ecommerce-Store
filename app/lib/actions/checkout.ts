@@ -4,6 +4,7 @@ import { db } from "@/app/lib/db";
 import { orders, discountCodes, OrderItem } from "@/app/db/schema";
 import { ensureTablesExist } from "@/app/lib/actions/admin";
 import { uploadToCloudinary } from "@/app/lib/cloudinary";
+import { sendOrderNotificationToAdmin } from "@/app/lib/notifications";
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -95,8 +96,37 @@ export async function createOrderAction(input: CreateOrderInput): Promise<Create
   try {
     await ensureTablesExist();
 
-    if (!input.customerName || !input.customerEmail || !input.address) {
-      return { success: false, error: "Please fill out all required shipping details." };
+    if (
+      !input.customerName ||
+      !input.customerName.trim() ||
+      !input.customerEmail ||
+      !input.customerEmail.trim() ||
+      !input.phone ||
+      !input.phone.trim() ||
+      !input.address ||
+      !input.address.trim() ||
+      !input.city ||
+      !input.city.trim()
+    ) {
+      return { success: false, error: "Please fill out all required billing and shipping fields (Name, Email, Phone, Address, City)." };
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(input.customerEmail.trim())) {
+      return { success: false, error: "Please enter a valid email address." };
+    }
+
+    const phoneDigits = input.phone.replace(/\D/g, "");
+    if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+      return { success: false, error: "Please enter a valid phone number (10 to 11 digits)." };
+    }
+
+    if (!input.items || !Array.isArray(input.items) || input.items.length === 0) {
+      return { success: false, error: "Your shopping bag is empty. Please add products to complete checkout." };
+    }
+
+    if (isNaN(input.totalAmount) || input.totalAmount <= 0) {
+      return { success: false, error: "Invalid order total amount." };
     }
 
     if (input.paymentMethod === "cod" && input.city.trim().toLowerCase() !== "karachi") {
@@ -159,6 +189,18 @@ export async function createOrderAction(input: CreateOrderInput): Promise<Create
       }
     }
 
+    const orderId = inserted[0]?.id;
+
+    // Broadcast instant Web Push notification to store admin devices
+    if (orderId) {
+      sendOrderNotificationToAdmin({
+        orderId,
+        customerName: input.customerName,
+        totalAmount: input.totalAmount,
+        itemsCount: input.items.length,
+      }).catch((err) => console.error("Error triggering push notification:", err));
+    }
+
     revalidatePath("/admin");
     revalidatePath("/admin/manageOrders");
     revalidatePath("/admin/inventory");
@@ -167,7 +209,7 @@ export async function createOrderAction(input: CreateOrderInput): Promise<Create
 
     return {
       success: true,
-      orderId: inserted[0]?.id,
+      orderId,
     };
   } catch (error) {
     console.error("Error creating order:", error);

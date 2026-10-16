@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useEffect, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Percent, Plus, Tag, Trash2, X, Zap } from "lucide-react";
 import { DiscountCode } from "@/app/db/schema";
 import {
@@ -13,12 +14,18 @@ interface Props {
 }
 
 export default function DiscountManager({ initialCodes }: Props) {
+  const router = useRouter();
+  const [codes, setCodes] = useState<DiscountCode[]>(initialCodes);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [code, setCode] = useState("");
   const [discountPercent, setDiscountPercent] = useState("");
   const [minOrderAmount, setMinOrderAmount] = useState("0");
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCodes(initialCodes);
+  }, [initialCodes]);
 
   const handleCreateCode = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +42,7 @@ export default function DiscountManager({ initialCodes }: Props) {
         setDiscountPercent("");
         setMinOrderAmount("0");
         setMessage("Discount code created successfully!");
+        router.refresh();
         setTimeout(() => setMessage(null), 3000);
       } else {
         alert(res.error || "Failed to create discount code.");
@@ -44,11 +52,16 @@ export default function DiscountManager({ initialCodes }: Props) {
 
   const handleDeleteCode = (id: number) => {
     if (!confirm("Are you sure you want to delete this discount code?")) return;
+    setCodes((prev) => prev.filter((c) => c.id !== id));
+
     startTransition(async () => {
       const res = await deleteDiscountCodeAction(id);
       if (res.success) {
         setMessage("Discount code removed.");
+        router.refresh();
         setTimeout(() => setMessage(null), 3000);
+      } else {
+        setCodes(initialCodes);
       }
     });
   };
@@ -89,7 +102,7 @@ export default function DiscountManager({ initialCodes }: Props) {
           </div>
           <div>
             <p className="text-xs font-semibold text-neutral-500 uppercase">Live Discount Codes</p>
-            <p className="text-2xl font-bold text-neutral-900 mt-0.5">{initialCodes.length} Active</p>
+            <p className="text-2xl font-bold text-neutral-900 mt-0.5">{codes.length} Active</p>
           </div>
         </div>
 
@@ -121,7 +134,7 @@ export default function DiscountManager({ initialCodes }: Props) {
           <span className="text-xs text-neutral-500">Validated on checkout</span>
         </div>
 
-        {initialCodes.length === 0 ? (
+        {codes.length === 0 ? (
           <div className="py-12 text-center text-neutral-500 space-y-3">
             <Tag className="w-8 h-8 mx-auto text-neutral-300" />
             <p>No custom discount codes in database yet.</p>
@@ -134,7 +147,7 @@ export default function DiscountManager({ initialCodes }: Props) {
           </div>
         ) : (
           <div className="divide-y divide-neutral-100">
-            {initialCodes.map((c) => (
+            {codes.map((c) => (
               <div
                 key={c.id}
                 className="p-4 flex items-center justify-between hover:bg-neutral-50/60 transition"

@@ -13,13 +13,18 @@ export async function trackOrderAction(query: string): Promise<Order | null> {
 
     const upperClean = clean.toUpperCase();
 
+    const sanitize = (ord: Order): Order => ({
+      ...ord,
+      paymentProof: null, // Security: never expose uploaded bank receipts via public tracking
+    });
+
     // Check if query has prefix #ORD- or ORD-
     if (upperClean.startsWith("#ORD-") || upperClean.startsWith("ORD-")) {
       const numPart = upperClean.replace(/[^0-9]/g, "");
       const orderId = parseInt(numPart, 10);
       if (!isNaN(orderId)) {
         const byId = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
-        if (byId.length > 0) return byId[0];
+        if (byId.length > 0) return sanitize(byId[0]);
       }
     }
 
@@ -27,7 +32,7 @@ export async function trackOrderAction(query: string): Promise<Order | null> {
     if (/^\d+$/.test(clean) && clean.length < 8) {
       const orderId = parseInt(clean, 10);
       const byId = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
-      if (byId.length > 0) return byId[0];
+      if (byId.length > 0) return sanitize(byId[0]);
     }
 
     // Look up by email (most recent order)
@@ -39,7 +44,7 @@ export async function trackOrderAction(query: string): Promise<Order | null> {
         .orderBy(desc(orders.id))
         .limit(1);
 
-      if (byEmail.length > 0) return byEmail[0];
+      if (byEmail.length > 0) return sanitize(byEmail[0]);
     }
 
     // Look up by phone number
@@ -52,7 +57,7 @@ export async function trackOrderAction(query: string): Promise<Order | null> {
         .orderBy(desc(orders.id))
         .limit(1);
 
-      if (byPhone.length > 0) return byPhone[0];
+      if (byPhone.length > 0) return sanitize(byPhone[0]);
     }
 
     return null;

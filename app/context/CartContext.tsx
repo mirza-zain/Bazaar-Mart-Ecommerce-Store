@@ -22,23 +22,34 @@ interface CartContextType {
   shippingFee: number;
   freeShippingThreshold: number;
   progressToFreeShipping: number;
+  isDrawerOpen: boolean;
+  openDrawer: () => void;
+  closeDrawer: () => void;
+  toggleDrawer: () => void;
   addToCart: (item: Omit<CartItem, "id">) => void;
   updateQuantity: (id: string, delta: number) => void;
   removeItem: (id: string) => void;
   clearCart: () => void;
 }
 
+import { ShippingRule } from "@/app/db/schema";
+import { getShippingRulesAction } from "@/app/lib/actions/shipping";
+
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 const CART_STORAGE_KEY = "bazzario_cart_v1";
-const FREE_SHIPPING_THRESHOLD = 8000;
-const FLAT_SHIPPING_FEE = 250;
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [shippingRules, setShippingRules] = useState<ShippingRule[]>([]);
 
-  // Load cart from localStorage on client mount
+  const openDrawer = () => setIsDrawerOpen(true);
+  const closeDrawer = () => setIsDrawerOpen(false);
+  const toggleDrawer = () => setIsDrawerOpen((prev) => !prev);
+
+  // Load cart from localStorage and shipping rules on client mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem(CART_STORAGE_KEY);
@@ -50,6 +61,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoaded(true);
     }
+
+    getShippingRulesAction()
+      .then((rules) => {
+        if (rules && rules.length > 0) setShippingRules(rules);
+      })
+      .catch((err) => console.error("Error loading shipping rules in cart:", err));
   }, []);
 
   // Save cart to localStorage whenever items change
@@ -83,6 +100,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         return [...prevItems, itemWithId];
       }
     });
+    setIsDrawerOpen(true);
   };
 
   const updateQuantity = (id: string, delta: number) => {
@@ -125,14 +143,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     [items]
   );
 
+  const defaultRule = shippingRules.find(
+    (r) => r.isDefault || r.city.trim().toUpperCase() === "DEFAULT"
+  );
+  const freeThreshold = defaultRule ? Number(defaultRule.freeShippingThreshold) || 8000 : 8000;
+  const defaultFee = defaultRule ? Number(defaultRule.charge) || 250 : 250;
+  const isFreeActive = defaultRule?.isActive ?? true;
+
   const shippingFee = useMemo(
-    () => (items.length === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_FEE),
-    [items.length, subtotal]
+    () => (items.length === 0 || (isFreeActive && subtotal >= freeThreshold) ? 0 : defaultFee),
+    [items.length, subtotal, isFreeActive, freeThreshold, defaultFee]
   );
 
   const progressToFreeShipping = useMemo(
-    () => Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100),
-    [subtotal]
+    () => Math.min((subtotal / freeThreshold) * 100, 100),
+    [subtotal, freeThreshold]
   );
 
   return (
@@ -143,8 +168,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         totalItems,
         subtotal,
         shippingFee,
-        freeShippingThreshold: FREE_SHIPPING_THRESHOLD,
+        freeShippingThreshold: freeThreshold,
         progressToFreeShipping,
+        isDrawerOpen,
+        openDrawer,
+        closeDrawer,
+        toggleDrawer,
         addToCart,
         updateQuantity,
         removeItem,

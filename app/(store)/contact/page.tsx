@@ -107,61 +107,44 @@ export default function ContactPage() {
         <div className="space-y-4">
           {/* WhatsApp Direct */}
           <a
-            href="https://wa.me/923001234567?text=Hello%20Bazaario%2C%20I%20have%20an%20inquiry%20regarding%20an%20order"
+            href="https://wa.me/923332244373?text=Hello%20Bazaario%2C%20I%20have%20an%20inquiry%20regarding%20an%20order"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-6 bg-emerald-50 rounded-2xl border border-emerald-200/80 flex items-start gap-4 hover:border-emerald-400 transition group block"
+            className="p-6 bg-emerald-50 rounded-2xl border border-emerald-200/80 flex items-start gap-4 hover:border-emerald-400 transition group block shadow-xs"
           >
             <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
               <MessageCircle className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-base text-emerald-950">WhatsApp Chat</h3>
+                <h3 className="font-semibold text-base text-emerald-950">WhatsApp Support</h3>
                 <span className="text-[10px] bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full font-bold uppercase">
                   Fastest
                 </span>
               </div>
-              <p className="text-xs text-emerald-700 mt-0.5">Average reply in 5 minutes</p>
-              <p className="text-sm font-bold text-emerald-900 mt-2 group-hover:underline">
-                Chat on WhatsApp →
+              <p className="text-xs text-emerald-700 mt-0.5">Direct chat with our Karachi team</p>
+              <p className="text-sm font-bold text-emerald-900 mt-2 font-mono group-hover:underline">
+                +92 333 2244373 →
               </p>
             </div>
           </a>
 
-          {/* Email Support */}
-          <div className="p-6 bg-neutral-50 rounded-2xl border border-neutral-200/80 flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-black text-white flex items-center justify-center shrink-0">
-              <Mail className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-base text-neutral-900">Email Support</h3>
-              <p className="text-xs text-neutral-500 mt-0.5">Average response under 2 hours</p>
-              <a
-                href="mailto:support@bazaario.com"
-                className="text-sm font-semibold text-neutral-900 hover:underline mt-2 inline-block"
-              >
-                support@bazaario.com
-              </a>
-            </div>
-          </div>
-
-          {/* Phone Hotline */}
-          <div className="p-6 bg-neutral-50 rounded-2xl border border-neutral-200/80 flex items-start gap-4">
+          {/* Phone Hotline / Direct Call */}
+          <a
+            href="tel:+923332244373"
+            className="p-6 bg-neutral-50 rounded-2xl border border-neutral-200/80 flex items-start gap-4 hover:border-black transition group block"
+          >
             <div className="w-12 h-12 rounded-xl bg-black text-white flex items-center justify-center shrink-0">
               <Phone className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-semibold text-base text-neutral-900">Helpline</h3>
+              <h3 className="font-semibold text-base text-neutral-900">Direct Helpline</h3>
               <p className="text-xs text-neutral-500 mt-0.5">Mon - Sat from 10:00 AM to 8:00 PM</p>
-              <a
-                href="tel:+923001234567"
-                className="text-sm font-mono font-semibold text-neutral-900 hover:underline mt-2 inline-block"
-              >
-                +92 (300) 123-4567
-              </a>
+              <p className="text-sm font-mono font-bold text-neutral-900 mt-2 group-hover:underline">
+                +92 333 2244373
+              </p>
             </div>
-          </div>
+          </a>
 
           {/* Studio Location */}
           <div className="p-6 bg-neutral-50 rounded-2xl border border-neutral-200/80 flex items-start gap-4">

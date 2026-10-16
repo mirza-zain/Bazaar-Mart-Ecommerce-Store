@@ -1,12 +1,11 @@
 import React from "react";
-import { getDashboardData } from "@/app/lib/actions/admin";
-import { ReceiptText } from "lucide-react";
-import AdminClientView from "../(components)/AdminClientView";
+import { getAllOrdersAction } from "@/app/lib/actions/admin";
+import OrdersManager from "./(components)/OrdersManager";
 
 export const instant = false;
 
 export default async function ManageOrdersPage() {
-  const data = await getDashboardData();
+  const allOrders = await getAllOrdersAction();
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6">
@@ -15,15 +14,11 @@ export default async function ManageOrdersPage() {
           Manage Orders
         </h1>
         <p className="text-sm text-neutral-500 mt-1">
-          Track customer shipments, order fulfillment, and update delivery statuses.
+          Review customer shipments, verify bank transfer receipts, and update order fulfillments.
         </p>
       </div>
 
-      <AdminClientView
-        stats={data.stats}
-        products={data.recentProducts}
-        orders={data.recentOrders}
-      />
+      <OrdersManager initialOrders={allOrders} />
     </div>
   );
 }

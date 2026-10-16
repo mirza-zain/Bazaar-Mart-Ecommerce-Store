@@ -1,15 +1,22 @@
 import React from "react";
 import { getDiscountCodesAction } from "@/app/lib/actions/admin";
-import DiscountManager from "./(components)/DiscountManager";
+import { getShippingRulesAction } from "@/app/lib/actions/shipping";
+import PricingAndShippingManager from "./(components)/PricingAndShippingManager";
 
 export const instant = false;
 
 export default async function PricingRulesPage() {
-  const codes = await getDiscountCodesAction();
+  const [codes, shippingRules] = await Promise.all([
+    getDiscountCodesAction(),
+    getShippingRulesAction(),
+  ]);
 
   return (
     <div className="w-full max-w-7xl mx-auto">
-      <DiscountManager initialCodes={codes} />
+      <PricingAndShippingManager
+        initialCodes={codes}
+        initialShippingRules={shippingRules}
+      />
     </div>
   );
 }

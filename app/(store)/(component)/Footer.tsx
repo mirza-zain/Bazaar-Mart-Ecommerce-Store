@@ -135,12 +135,10 @@ export default function Footer() {
             <h4 className="text-xs font-semibold uppercase tracking-wider text-neutral-300">Get in Touch</h4>
             <ul className="space-y-2.5 text-sm text-neutral-400">
               <li className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-neutral-400 shrink-0" />
-                <span>support@bazaario.com</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-neutral-400 shrink-0" />
-                <span>+92 300 1234567</span>
+                <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
+                <a href="tel:+923332244373" className="hover:text-white transition font-mono">
+                  +92 333 2244373
+                </a>
               </li>
               <li className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-neutral-400 shrink-0" />

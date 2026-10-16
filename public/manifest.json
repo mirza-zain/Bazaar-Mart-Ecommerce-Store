@@ -1,0 +1,17 @@
+{
+  "name": "Bazaario Admin Console",
+  "short_name": "Bazaario Admin",
+  "description": "Store Operations & Order Management Console for Bazaario",
+  "start_url": "/admin",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}

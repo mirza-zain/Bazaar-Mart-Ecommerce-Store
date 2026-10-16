@@ -9,7 +9,9 @@ import {
   Building2,
   Check,
   CheckCircle2,
+  ChevronDown,
   Clock,
+  Copy,
   CreditCard,
   FileText,
   Lock,
@@ -27,6 +29,28 @@ import {
   validateDiscountCodeAction,
 } from "@/app/lib/actions/checkout";
 import { useCart } from "@/app/context/CartContext";
+import { ShippingRule } from "@/app/db/schema";
+import { getShippingRulesAction } from "@/app/lib/actions/shipping";
+import { computeShippingFee } from "@/app/lib/shippingUtils";
+
+const COUNTRY_CODES = [
+  { code: "+92", country: "PK", flag: "🇵🇰", label: "Pakistan (+92)" },
+  { code: "+1", country: "US", flag: "🇺🇸", label: "United States (+1)" },
+  { code: "+44", country: "GB", flag: "🇬🇧", label: "United Kingdom (+44)" },
+  { code: "+971", country: "AE", flag: "🇦🇪", label: "UAE (+971)" },
+  { code: "+966", country: "SA", flag: "🇸🇦", label: "Saudi Arabia (+966)" },
+  { code: "+968", country: "OM", flag: "🇴🇲", label: "Oman (+968)" },
+  { code: "+974", country: "QA", flag: "🇶🇦", label: "Qatar (+974)" },
+  { code: "+965", country: "KW", flag: "🇰🇼", label: "Kuwait (+965)" },
+  { code: "+973", country: "BH", flag: "🇧🇭", label: "Bahrain (+973)" },
+  { code: "+1", country: "CA", flag: "🇨🇦", label: "Canada (+1)" },
+  { code: "+61", country: "AU", flag: "🇦🇺", label: "Australia (+61)" },
+  { code: "+49", country: "DE", flag: "🇩🇪", label: "Germany (+49)" },
+  { code: "+90", country: "TR", flag: "🇹🇷", label: "Turkey (+90)" },
+  { code: "+60", country: "MY", flag: "🇲🇾", label: "Malaysia (+60)" },
+  { code: "+86", country: "CN", flag: "🇨🇳", label: "China (+86)" },
+  { code: "+91", country: "IN", flag: "🇮🇳", label: "India (+91)" },
+];
 
 export default function CheckoutPage() {
   const { items, clearCart, isLoaded } = useCart();
@@ -42,6 +66,15 @@ export default function CheckoutPage() {
     notes: "",
   });
 
+  const [countryCode, setCountryCode] = useState("+92");
+  const [customCity, setCustomCity] = useState("");
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Strictly accept only numbers (0-9) and prevent exceeding 11 digits
+    const cleanedDigits = e.target.value.replace(/\D/g, "").slice(0, 11);
+    setFormData((prev) => ({ ...prev, phone: cleanedDigits }));
+  };
+  const [shippingRules, setShippingRules] = useState<ShippingRule[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "bank_transfer">("cod");
   const [paymentProof, setPaymentProof] = useState<string | null>(null);
   const [promoCode, setPromoCode] = useState("");
@@ -53,12 +86,36 @@ export default function CheckoutPage() {
   } | null>(null);
   const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState<number | null>(null);
+  const [copiedTrackingId, setCopiedTrackingId] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const handleCopyTrackingId = (trackingId: string) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(trackingId);
+      setCopiedTrackingId(true);
+      setTimeout(() => setCopiedTrackingId(false), 2000);
+    }
+  };
+
+  // Load live shipping rules
+  React.useEffect(() => {
+    getShippingRulesAction()
+      .then((rules) => {
+        if (rules && rules.length > 0) setShippingRules(rules);
+      })
+      .catch((err) => console.error("Error fetching shipping rules on checkout:", err));
+  }, []);
+
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const discountAmount = Math.round((subtotal * discountPercent) / 100);
-  const shippingFee = subtotal >= 8000 ? 0 : 250;
+
+  const effectiveCity = formData.city === "Other" ? (customCity.trim() || "Other") : formData.city;
+  const shippingCalculation = React.useMemo(() => {
+    return computeShippingFee(subtotal, effectiveCity, shippingRules);
+  }, [subtotal, effectiveCity, shippingRules]);
+
+  const shippingFee = shippingCalculation.fee;
   const grandTotal = Math.max(0, subtotal - discountAmount + shippingFee);
 
   const handleApplyPromo = (e: React.FormEvent) => {
@@ -113,25 +170,74 @@ export default function CheckoutPage() {
     e.preventDefault();
     setErrorMessage(null);
 
+    const trimmedFirstName = formData.firstName.trim();
+    const trimmedLastName = formData.lastName.trim();
+    const trimmedEmail = formData.email.trim();
+    const trimmedAddress = formData.address.trim();
+    const phoneDigits = formData.phone.replace(/\D/g, "");
+
+    // Strict Billing & Shipping Field Validation (cannot go empty)
+    if (!trimmedFirstName) {
+      setErrorMessage("First Name is required. Please provide your first name.");
+      return;
+    }
+
+    if (!trimmedLastName) {
+      setErrorMessage("Last Name is required. Please provide your last name.");
+      return;
+    }
+
+    if (!trimmedEmail) {
+      setErrorMessage("Email Address is required to send your order confirmation and invoice.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setErrorMessage("Please enter a valid email address (e.g. name@example.com).");
+      return;
+    }
+
+    if (!phoneDigits) {
+      setErrorMessage("Phone Number is required for delivery courier coordination.");
+      return;
+    }
+
+    if (phoneDigits.length < 10 || phoneDigits.length > 11) {
+      setErrorMessage("Phone number must be between 10 and 11 digits (e.g. 03001234567 or 3001234567). It cannot exceed 11 digits.");
+      return;
+    }
+
+    if (!trimmedAddress || trimmedAddress.length < 5) {
+      setErrorMessage("Please enter a complete delivery address (street, house / flat #) so courier can deliver your order.");
+      return;
+    }
+
+    if (formData.city === "Other" && !customCity.trim()) {
+      setErrorMessage("Please enter the name of your city or town.");
+      return;
+    }
+
     if (paymentMethod === "bank_transfer" && !paymentProof) {
       setErrorMessage("Please upload a screenshot of your payment transfer before placing the order.");
       return;
     }
 
-    if (paymentMethod === "cod" && formData.city.toLowerCase() !== "karachi") {
+    if (paymentMethod === "cod" && effectiveCity.toLowerCase() !== "karachi") {
       setErrorMessage("Cash on Delivery (COD) is currently only available for deliveries within Karachi. Please select Bank Transfer.");
       return;
     }
 
-    const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+    const fullName = `${trimmedFirstName} ${trimmedLastName}`.trim();
+    const formattedPhone = `${countryCode} ${phoneDigits}`;
 
     startTransition(async () => {
       const res = await createOrderAction({
         customerName: fullName,
-        customerEmail: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        city: formData.city,
+        customerEmail: trimmedEmail,
+        phone: formattedPhone,
+        address: trimmedAddress,
+        city: effectiveCity,
         totalAmount: grandTotal,
         paymentMethod,
         paymentProof: paymentProof || undefined,
@@ -150,6 +256,30 @@ export default function CheckoutPage() {
       if (res.success && res.orderId) {
         clearCart();
         setPlacedOrderId(res.orderId);
+        try {
+          const formattedId = `#ORD-${res.orderId.toString().padStart(4, "0")}`;
+          const newOrderData = {
+            orderId: res.orderId,
+            formattedId,
+            customerName: fullName,
+            email: trimmedEmail,
+            phone: formattedPhone,
+            productIds: items.map((i) => i.productId),
+            timestamp: Date.now(),
+          };
+          const existingRaw = localStorage.getItem("bazzario_recent_orders");
+          let existingOrders: any[] = [];
+          if (existingRaw) {
+            try {
+              existingOrders = JSON.parse(existingRaw);
+            } catch {}
+          }
+          const updated = [newOrderData, ...existingOrders.filter((o: any) => o.orderId !== res.orderId)].slice(0, 10);
+          localStorage.setItem("bazzario_recent_orders", JSON.stringify(updated));
+          localStorage.setItem("bazzario_last_order", JSON.stringify(newOrderData));
+        } catch (err) {
+          console.error("Failed saving recent order to localStorage", err);
+        }
       } else {
         setErrorMessage(res.error || "Failed to place order.");
       }
@@ -204,9 +334,30 @@ export default function CheckoutPage() {
             Order Placed Successfully!
           </h1>
 
-          <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100 inline-block">
-            <span className="text-xs uppercase font-semibold text-neutral-400">Your Order Number</span>
-            <p className="text-2xl font-mono font-bold text-neutral-900 mt-0.5">{formattedId}</p>
+          <div className="p-5 bg-neutral-50 rounded-2xl border border-neutral-200 inline-flex flex-col items-center gap-1.5 shadow-xs">
+            <span className="text-xs uppercase font-semibold text-neutral-400 tracking-wider">Tracking / Order ID</span>
+            <div className="flex items-center gap-2.5">
+              <p className="text-2xl sm:text-3xl font-mono font-bold text-neutral-900 tracking-tight">{formattedId}</p>
+              <button
+                type="button"
+                onClick={() => handleCopyTrackingId(formattedId)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-100 transition shadow-xs active:scale-95 cursor-pointer"
+                title="Copy Tracking ID"
+              >
+                {copiedTrackingId ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+                    <span className="text-emerald-700 font-bold">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-neutral-500" />
+                    <span>Copy ID</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <p className="text-[11px] text-neutral-400">Save this ID to track your package anytime</p>
           </div>
 
           <p className="text-sm text-neutral-600 max-w-md mx-auto leading-relaxed">
@@ -273,12 +424,17 @@ export default function CheckoutPage() {
         <div className="lg:col-span-7 space-y-8">
           {/* Section 1: Customer Contact */}
           <div className="bg-white p-6 sm:p-8 rounded-3xl border border-neutral-200 space-y-4">
-            <h2 className="text-lg font-bold text-neutral-900">1. Contact Information</h2>
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
+              <h2 className="text-lg font-bold text-neutral-900">1. Contact Information</h2>
+              <span className="text-xs font-semibold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full">
+                * Required Fields
+              </span>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">
-                  Email Address *
+                <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1.5">
+                  Email Address <span className="text-rose-500 font-bold">*</span>
                 </label>
                 <input
                   type="email"
@@ -286,63 +442,112 @@ export default function CheckoutPage() {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="your.email@example.com"
-                  className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black transition"
+                  className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black focus:ring-1 focus:ring-black transition"
                 />
+                <p className="text-[11px] text-neutral-400 mt-1">Invoice and order tracking will be emailed here</p>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">
-                  Phone Number (For Courier) *
-                </label>
-                <input
-                  type="tel"
-                  required
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="0300 1234567"
-                  className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black transition"
-                />
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-neutral-700 uppercase">
+                    Phone Number (For Courier) <span className="text-rose-500 font-bold">*</span>
+                  </label>
+                  <span
+                    className={`text-[11px] font-mono ${
+                      formData.phone.length === 11
+                        ? "text-emerald-600 font-semibold"
+                        : formData.phone.length > 0
+                        ? "text-neutral-500"
+                        : "text-neutral-400"
+                    }`}
+                  >
+                    {formData.phone.length}/11 digits
+                  </span>
+                </div>
+
+                <div className="flex rounded-xl border border-neutral-200 bg-neutral-50 overflow-hidden focus-within:border-black focus-within:ring-1 focus-within:ring-black transition shadow-2xs">
+                  {/* Country Code Selector */}
+                  <div className="relative shrink-0 border-r border-neutral-200 bg-neutral-100/80">
+                    <select
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      className="h-full pl-3 pr-7 py-3 bg-transparent text-xs sm:text-sm font-semibold text-neutral-800 focus:outline-hidden cursor-pointer appearance-none"
+                      aria-label="Select Country Code"
+                    >
+                      {COUNTRY_CODES.map((c) => (
+                        <option key={`${c.country}-${c.code}`} value={c.code}>
+                          {c.flag} {c.code} ({c.country})
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-neutral-400">
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+
+                  {/* Phone Digits Input */}
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]{10,11}"
+                    required
+                    maxLength={11}
+                    value={formData.phone}
+                    onChange={handlePhoneChange}
+                    placeholder="03001234567"
+                    className="flex-1 min-w-0 px-4 py-3 bg-transparent text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-hidden font-mono"
+                  />
+                </div>
+                <p className="text-[11px] text-neutral-500 mt-1 flex items-center justify-between">
+                  <span>Max 11 digits (e.g. 03001234567)</span>
+                  <span className="font-medium text-neutral-700">Format: {countryCode} {formData.phone || "XXXXXXXXXXX"}</span>
+                </p>
               </div>
             </div>
           </div>
 
           {/* Section 2: Delivery Address */}
           <div className="bg-white p-6 sm:p-8 rounded-3xl border border-neutral-200 space-y-4">
-            <h2 className="text-lg font-bold text-neutral-900">2. Shipping Address</h2>
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
+              <h2 className="text-lg font-bold text-neutral-900">2. Billing & Shipping Address</h2>
+              <span className="text-xs text-neutral-400">
+                All details required for courier delivery
+              </span>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">
-                  First Name *
+                <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1.5">
+                  First Name <span className="text-rose-500 font-bold">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  placeholder="Ali"
-                  className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black transition"
+                  placeholder="e.g. Ali"
+                  className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black focus:ring-1 focus:ring-black transition"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">
-                  Last Name *
+                <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1.5">
+                  Last Name <span className="text-rose-500 font-bold">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  placeholder="Khan"
-                  className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black transition"
+                  placeholder="e.g. Khan"
+                  className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black focus:ring-1 focus:ring-black transition"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">
-                Street Address & House / Flat # *
+              <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1.5">
+                Street Address & House / Flat # <span className="text-rose-500 font-bold">*</span>
               </label>
               <input
                 type="text"
@@ -350,40 +555,65 @@ export default function CheckoutPage() {
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 placeholder="House # 12-B, Street 4, Sector F-7/2"
-                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black transition"
+                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black focus:ring-1 focus:ring-black transition"
               />
+              <p className="text-[11px] text-neutral-400 mt-1">
+                Provide accurate street name, apartment or house number
+              </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">
-                  City *
+                <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1.5">
+                  City <span className="text-rose-500 font-bold">*</span>
                 </label>
-                <select
-                  value={formData.city}
-                  onChange={(e) => {
-                    const newCity = e.target.value;
-                    setFormData((prev) => ({ ...prev, city: newCity }));
-                    if (newCity.toLowerCase() !== "karachi" && paymentMethod === "cod") {
-                      setPaymentMethod("bank_transfer");
-                    }
-                  }}
-                  className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black transition"
-                >
-                  <option value="Karachi">Karachi</option>
-                  <option value="Lahore">Lahore</option>
-                  <option value="Islamabad">Islamabad</option>
-                  <option value="Rawalpindi">Rawalpindi</option>
-                  <option value="Faisalabad">Faisalabad</option>
-                  <option value="Multan">Multan</option>
-                  <option value="Peshawar">Peshawar</option>
-                  <option value="Quetta">Quetta</option>
-                  <option value="Other">Other City</option>
-                </select>
+                <div className="relative">
+                  <select
+                    required
+                    value={formData.city}
+                    onChange={(e) => {
+                      const newCity = e.target.value;
+                      setFormData((prev) => ({ ...prev, city: newCity }));
+                      if (newCity.toLowerCase() !== "karachi" && paymentMethod === "cod") {
+                        setPaymentMethod("bank_transfer");
+                      }
+                    }}
+                    className="w-full pl-4 pr-9 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black focus:ring-1 focus:ring-black transition appearance-none cursor-pointer"
+                  >
+                    <option value="Karachi">Karachi</option>
+                    <option value="Lahore">Lahore</option>
+                    <option value="Islamabad">Islamabad</option>
+                    <option value="Rawalpindi">Rawalpindi</option>
+                    <option value="Faisalabad">Faisalabad</option>
+                    <option value="Multan">Multan</option>
+                    <option value="Peshawar">Peshawar</option>
+                    <option value="Quetta">Quetta</option>
+                    <option value="Other">Other City / Town</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-neutral-400">
+                    <ChevronDown className="w-4 h-4" />
+                  </div>
+                </div>
+
+                {formData.city === "Other" && (
+                  <div className="mt-2.5">
+                    <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">
+                      City / Town Name <span className="text-rose-500 font-bold">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={customCity}
+                      onChange={(e) => setCustomCity(e.target.value)}
+                      placeholder="Type your city or town name (e.g. Sialkot, Hyderabad, Abbottabad)..."
+                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black focus:ring-1 focus:ring-black transition"
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">
+                <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1.5">
                   Postal Code (Optional)
                 </label>
                 <input
@@ -391,9 +621,22 @@ export default function CheckoutPage() {
                   value={formData.postalCode}
                   onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
                   placeholder="75500"
-                  className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black transition"
+                  className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black focus:ring-1 focus:ring-black transition"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1.5">
+                Special Delivery Instructions (Optional)
+              </label>
+              <textarea
+                rows={2}
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="e.g. Ring doorbell twice, deliver in evening..."
+                className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black focus:ring-1 focus:ring-black transition resize-none"
+              />
             </div>
           </div>
 
@@ -693,9 +936,24 @@ export default function CheckoutPage() {
                 </div>
               )}
 
-              <div className="flex justify-between text-neutral-600">
-                <span>Shipping</span>
-                <span>{shippingFee === 0 ? "FREE" : `PKR ${shippingFee}`}</span>
+              <div className="flex justify-between items-start text-neutral-600">
+                <div>
+                  <span className="font-medium text-neutral-800">Shipping</span>
+                  {shippingCalculation.isFree ? (
+                    <span className="text-[11px] text-emerald-600 font-medium block">
+                      Free shipping qualified (&ge; PKR {shippingCalculation.freeThreshold.toLocaleString()})
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-neutral-400 block">
+                      {shippingCalculation.rateType === "city"
+                        ? `${shippingCalculation.matchedCity} express rate`
+                        : "Standard delivery rate"}
+                    </span>
+                  )}
+                </div>
+                <span className={`font-semibold ${shippingFee === 0 ? "text-emerald-600" : "text-neutral-900"}`}>
+                  {shippingFee === 0 ? "FREE" : `PKR ${shippingFee.toLocaleString()}`}
+                </span>
               </div>
 
               <div className="pt-3 border-t border-neutral-200 flex justify-between text-lg font-bold text-neutral-900">
