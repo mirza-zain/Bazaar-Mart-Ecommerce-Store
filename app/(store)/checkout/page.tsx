@@ -23,6 +23,7 @@ import {
   Truck,
   Upload,
   X,
+  Loader2,
 } from "lucide-react";
 import {
   createOrderAction,
@@ -72,6 +73,95 @@ const COUNTRIES_LIST = [
   { code: "Other", name: "Other Country", flag: "🌐", dialCode: "" },
 ];
 
+async function resizeImageBeforeUpload(file: File): Promise<File | Blob> {
+  if (!file.type.startsWith("image/") || file.type.includes("svg") || file.size < 800 * 1024) {
+    return file;
+  }
+
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const maxWidth = 1600;
+      const maxHeight = 1600;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth || height > maxHeight) {
+        if (width > height) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        } else {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (blob && blob.size < file.size) {
+            resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".webp"), { type: "image/webp" }));
+          } else {
+            resolve(file);
+          }
+        },
+        "image/webp",
+        0.88
+      );
+    };
+    img.onerror = () => resolve(file);
+    img.src = url;
+  });
+}
+
+async function uploadToCloudinaryClient(file: File, folder: string = "bazzario/payments"): Promise<string | null> {
+  try {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dddsn39gd";
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "bazaario";
+
+    let uploadFile: File | Blob = file;
+    if (file.size > 800 * 1024) {
+      try {
+        uploadFile = await resizeImageBeforeUpload(file);
+      } catch (e) {
+        console.warn("Resize error:", e);
+      }
+    }
+
+    const formData = new FormData();
+    formData.append("file", uploadFile);
+    formData.append("upload_preset", uploadPreset);
+    if (folder) {
+      formData.append("folder", folder);
+    }
+
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const data = await res.json();
+    return data.secure_url || data.url || null;
+  } catch (err) {
+    console.error("Client upload error:", err);
+    return null;
+  }
+}
+
 export default function CheckoutPage() {
   const { items, clearCart, isLoaded } = useCart();
 
@@ -115,6 +205,8 @@ export default function CheckoutPage() {
   const [shippingRules, setShippingRules] = useState<ShippingRule[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "bank_transfer">("cod");
   const [paymentProof, setPaymentProof] = useState<string | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [appliedCode, setAppliedCode] = useState<string | null>(null);
   const [discountPercent, setDiscountPercent] = useState(0);
@@ -188,20 +280,41 @@ export default function CheckoutPage() {
     setDiscountFeedback(null);
   };
 
-  const handleScreenshotUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert("File size exceeds 5MB limit. Please upload an image under 5MB.");
+    if (file.size > 10 * 1024 * 1024) {
+      alert("File size exceeds 10MB limit. Please upload an image under 10MB.");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (uploadEvent) => {
-      setPaymentProof(uploadEvent.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    const localUrl = URL.createObjectURL(file);
+    setScreenshotPreview(localUrl);
+    setPaymentProof(localUrl);
+    setIsUploadingScreenshot(true);
+
+    try {
+      const uploadedUrl = await uploadToCloudinaryClient(file, "bazzario/payments");
+      if (uploadedUrl) {
+        setPaymentProof(uploadedUrl);
+      } else {
+        const reader = new FileReader();
+        reader.onload = (uploadEvent) => {
+          setPaymentProof(uploadEvent.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (err) {
+      console.warn("Screenshot upload error, fallback to data URL:", err);
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        setPaymentProof(uploadEvent.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsUploadingScreenshot(false);
+    }
   };
 
   const handlePlaceOrder = (e: React.FormEvent) => {
@@ -265,6 +378,11 @@ export default function CheckoutPage() {
 
     if (formData.country === "Pakistan" && formData.city === "Other" && !customCity.trim()) {
       setErrorMessage("Please enter the name of your city or town.");
+      return;
+    }
+
+    if (paymentMethod === "bank_transfer" && isUploadingScreenshot) {
+      setErrorMessage("Please wait a moment while your payment screenshot finishes uploading...");
       return;
     }
 
@@ -912,29 +1030,42 @@ export default function CheckoutPage() {
                     Upload Payment Screenshot (Receipt) *
                   </label>
 
+                  {isUploadingScreenshot && (
+                    <div className="flex items-center gap-2.5 p-3 bg-neutral-100 rounded-xl text-xs text-neutral-700 animate-pulse border border-neutral-200">
+                      <Loader2 className="w-4 h-4 animate-spin text-black shrink-0" />
+                      <span>Uploading payment receipt to secure storage...</span>
+                    </div>
+                  )}
+
                   {paymentProof ? (
                     <div className="relative p-3 bg-white rounded-xl border border-emerald-300 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-neutral-200 shrink-0">
                           <Image
-                            src={paymentProof}
+                            src={screenshotPreview || paymentProof}
                             alt="Payment Screenshot"
                             fill
                             className="object-cover"
+                            unoptimized={Boolean(screenshotPreview && screenshotPreview.startsWith("blob:"))}
                           />
                         </div>
                         <div>
                           <p className="text-xs font-semibold text-emerald-800 flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            Screenshot Attached
+                            {isUploadingScreenshot ? "Uploading..." : "Screenshot Attached"}
                           </p>
-                          <p className="text-[11px] text-neutral-400">Ready for admin verification</p>
+                          <p className="text-[11px] text-neutral-400">
+                            {isUploadingScreenshot ? "Optimizing receipt image..." : "Ready for admin verification"}
+                          </p>
                         </div>
                       </div>
 
                       <button
                         type="button"
-                        onClick={() => setPaymentProof(null)}
+                        onClick={() => {
+                          setPaymentProof(null);
+                          setScreenshotPreview(null);
+                        }}
                         className="p-1.5 text-neutral-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
                         title="Remove screenshot"
                       >
@@ -948,7 +1079,7 @@ export default function CheckoutPage() {
                         Click or drag to upload receipt screenshot
                       </span>
                       <span className="text-[11px] text-neutral-400 mt-0.5">
-                        PNG, JPG, JPEG up to 5MB
+                        PNG, JPG, JPEG, WEBP up to 10MB
                       </span>
                       <input
                         type="file"
