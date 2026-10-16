@@ -35,7 +35,10 @@ export default function ProductPurchaseActions({
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
-  const inStock = stock > 0;
+  const activeVariant = variants.find((v) => v.label === selectedVariant) || (variants.length > 0 ? variants[0] : null);
+  const currentPrice = activeVariant ? Number(activeVariant.price) : price;
+  const currentStock = activeVariant ? Number(activeVariant.stock) : stock;
+  const inStock = currentStock > 0;
 
   const handleAddToCart = () => {
     if (!inStock) return;
@@ -43,11 +46,11 @@ export default function ProductPurchaseActions({
       productId,
       name,
       category,
-      price,
+      price: currentPrice,
       quantity,
       image,
       variant: selectedVariant || undefined,
-      maxStock: stock,
+      maxStock: currentStock,
     });
 
     setAdded(true);
@@ -62,11 +65,11 @@ export default function ProductPurchaseActions({
       productId,
       name,
       category,
-      price,
+      price: currentPrice,
       quantity,
       image,
       variant: selectedVariant || undefined,
-      maxStock: stock,
+      maxStock: currentStock,
     });
     router.push("/checkout");
   };
@@ -89,22 +92,62 @@ export default function ProductPurchaseActions({
           <div className="flex flex-wrap gap-2">
             {variants.map((v, i) => {
               const isSelected = selectedVariant === v.label;
+              const vStock = Number(v.stock) || 0;
+              const isVOutOfStock = vStock <= 0;
+
               return (
                 <button
                   key={i}
                   type="button"
-                  onClick={() => setSelectedVariant(v.label)}
-                  className={`px-4 py-2 border rounded-xl text-sm font-medium transition cursor-pointer ${
+                  onClick={() => {
+                    setSelectedVariant(v.label);
+                    if (quantity > vStock && vStock > 0) {
+                      setQuantity(vStock);
+                    }
+                  }}
+                  className={`px-4 py-2 border rounded-xl text-sm font-medium transition cursor-pointer flex items-center gap-2 ${
                     isSelected
                       ? "border-black bg-black text-white shadow-xs"
+                      : isVOutOfStock
+                      ? "border-neutral-200 text-neutral-400 bg-neutral-50 hover:border-neutral-300"
                       : "border-neutral-200 text-neutral-800 hover:border-neutral-400 bg-white"
                   }`}
                 >
-                  {v.label}
+                  <span>{v.label}</span>
+                  {Number(v.price) !== price && (
+                    <span className={`text-xs ${isSelected ? "text-neutral-300" : "text-neutral-500"}`}>
+                      PKR {Number(v.price).toLocaleString()}
+                    </span>
+                  )}
+                  {isVOutOfStock && (
+                    <span className="text-[10px] text-rose-500 font-bold uppercase">(Sold Out)</span>
+                  )}
                 </button>
               );
             })}
           </div>
+
+          {/* Active variant dynamic price & status indicator */}
+          {activeVariant && (
+            <div className="flex items-center gap-2 mt-3 pt-2 border-t border-neutral-100">
+              <span className="text-lg font-bold text-neutral-900">
+                PKR {currentPrice.toLocaleString()}
+              </span>
+              {currentStock <= 5 && currentStock > 0 ? (
+                <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                  Only {currentStock} left!
+                </span>
+              ) : currentStock <= 0 ? (
+                <span className="text-[11px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                  Currently out of stock
+                </span>
+              ) : (
+                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  In stock ({currentStock} units)
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -128,8 +171,8 @@ export default function ProductPurchaseActions({
           </span>
           <button
             type="button"
-            disabled={quantity >= stock || !inStock}
-            onClick={() => setQuantity((q) => Math.min(stock, q + 1))}
+            disabled={quantity >= currentStock || !inStock}
+            onClick={() => setQuantity((q) => Math.min(currentStock, q + 1))}
             className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent transition cursor-pointer"
             aria-label="Increase quantity"
           >

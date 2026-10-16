@@ -19,8 +19,9 @@ import {
   AlertCircle,
   ExternalLink,
   Loader2,
+  Layers,
 } from "lucide-react";
-import { Product } from "@/app/db/schema";
+import { Product, ProductVariant } from "@/app/db/schema";
 import {
   addProductAction,
   updateProductAction,
@@ -148,14 +149,21 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
   const [formCategory, setFormCategory] = useState("Clothing");
   const [isCreatingNewCategory, setIsCreatingNewCategory] = useState(false);
   const [customNewCategory, setCustomNewCategory] = useState("");
-  const [formSubCategory, setFormSubCategory] = useState("T-Shirt");
+  const [formSubCategory, setFormSubCategory] = useState("");
   const [formPrice, setFormPrice] = useState("");
   const [formStock, setFormStock] = useState("");
   const [formDescription, setFormDescription] = useState("");
+  const [formVariants, setFormVariants] = useState<ProductVariant[]>([]);
   const [formImage, setFormImage] = useState("");
   const [formImagePreview, setFormImagePreview] = useState<string | null>(null);
   const [formSelectedFile, setFormSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Derived variant calculations
+  const hasVariants = formVariants.length > 0;
+  const totalVariantStock = formVariants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
+  const minVariantPrice = formVariants.length > 0 ? Math.min(...formVariants.map((v) => Number(v.price) || 0)) : 0;
+  const maxVariantPrice = formVariants.length > 0 ? Math.max(...formVariants.map((v) => Number(v.price) || 0)) : 0;
 
   // Keep state updated on server revalidation
   useEffect(() => {
@@ -170,13 +178,14 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
   const handleOpenAddModal = () => {
     setEditingProduct(null);
     setFormName("");
+    setFormDescription("");
     setFormCategory(existingCategories[0] || "Clothing");
     setIsCreatingNewCategory(false);
     setCustomNewCategory("");
-    setFormSubCategory("T-Shirt");
+    setFormSubCategory("");
     setFormPrice("");
     setFormStock("20");
-    setFormDescription("");
+    setFormVariants([]);
     setFormImage("");
     setFormImagePreview(null);
     setFormSelectedFile(null);
@@ -186,17 +195,70 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
   const handleOpenEditModal = (product: Product) => {
     setEditingProduct(product);
     setFormName(product.name);
+    setFormDescription(product.description || "");
     setFormCategory(product.category);
     setIsCreatingNewCategory(false);
     setCustomNewCategory("");
-    setFormSubCategory(product.subCategory || "General");
-    setFormPrice(product.price.toString());
-    setFormStock(product.stock.toString());
-    setFormDescription(product.description || "");
+    setFormSubCategory(product.subCategory === "General" ? "" : (product.subCategory || ""));
+    setFormPrice(product.price ? product.price.toString() : "");
+    setFormStock(product.stock ? product.stock.toString() : "");
+    const existingVariants = Array.isArray(product.variants) ? [...product.variants] : [];
+    setFormVariants(existingVariants);
     setFormImage(product.image || "");
     setFormImagePreview(product.image || null);
     setFormSelectedFile(null);
     setIsAddModalOpen(true);
+  };
+
+  // Variant management handlers
+  const handleAddVariant = (label = "", priceVal?: string | number, stockVal?: string | number) => {
+    const defaultPrice = Number(formPrice) || 0;
+    const defaultStock = Number(formStock) || 10;
+    setFormVariants((prev) => [
+      ...prev,
+      {
+        label,
+        price: priceVal !== undefined ? Number(priceVal) : defaultPrice,
+        stock: stockVal !== undefined ? Number(stockVal) : defaultStock,
+      },
+    ]);
+  };
+
+  const handleQuickAddSizes = () => {
+    const defaultPrice = Number(formPrice) || 0;
+    const defaultStock = Number(formStock) || 10;
+    const sizes = ["S", "M", "L", "XL"];
+    setFormVariants((prev) => {
+      const existingLabels = new Set(prev.map((v) => v.label.toUpperCase().trim()));
+      const toAdd = sizes
+        .filter((s) => !existingLabels.has(s))
+        .map((s) => ({ label: s, price: defaultPrice, stock: defaultStock }));
+      return [...prev, ...toAdd];
+    });
+  };
+
+  const handleUpdateVariant = (
+    index: number,
+    field: "label" | "price" | "stock",
+    value: string | number
+  ) => {
+    setFormVariants((prev) =>
+      prev.map((v, i) => {
+        if (i !== index) return v;
+        if (field === "label") return { ...v, label: String(value) };
+        if (field === "price") return { ...v, price: Math.max(0, Number(value) || 0) };
+        if (field === "stock") return { ...v, stock: Math.max(0, Number(value) || 0) };
+        return v;
+      })
+    );
+  };
+
+  const handleRemoveVariant = (index: number) => {
+    setFormVariants((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleClearAllVariants = () => {
+    setFormVariants([]);
   };
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -211,8 +273,8 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
 
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formName.trim() || !formPrice) {
-      showToast("Please enter product name and price.", "error");
+    if (!formName.trim()) {
+      showToast("Please enter a product title.", "error");
       return;
     }
 
@@ -220,6 +282,30 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
     if (!finalCategory) {
       showToast("Please select or enter a category name.", "error");
       return;
+    }
+
+    let finalPrice = formPrice;
+    let finalStock = formStock || "0";
+
+    if (hasVariants) {
+      for (let i = 0; i < formVariants.length; i++) {
+        const v = formVariants[i];
+        if (!v.label.trim()) {
+          showToast(`Variant #${i + 1} is missing a name/label.`, "error");
+          return;
+        }
+        if (Number(v.price) <= 0) {
+          showToast(`Variant "${v.label}" must have a price greater than 0.`, "error");
+          return;
+        }
+      }
+      finalPrice = minVariantPrice.toString();
+      finalStock = totalVariantStock.toString();
+    } else {
+      if (!formPrice || Number(formPrice) <= 0) {
+        showToast("Please enter a valid product price.", "error");
+        return;
+      }
     }
 
     setIsUploading(true);
@@ -239,11 +325,12 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
 
     const formData = new FormData();
     formData.append("name", formName.trim());
+    formData.append("description", formDescription.trim());
     formData.append("category", finalCategory);
     formData.append("subCategory", formSubCategory.trim() || "General");
-    formData.append("price", formPrice);
-    formData.append("stock", formStock || "0");
-    formData.append("description", formDescription.trim());
+    formData.append("price", finalPrice);
+    formData.append("stock", finalStock);
+    formData.append("variants", JSON.stringify(hasVariants ? formVariants : []));
     formData.append("image", finalImageUrl);
 
     // If direct upload failed to produce URL and we still have a file, send the single file
@@ -261,12 +348,13 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                 ? {
                     ...p,
                     name: formName.trim(),
+                    description: formDescription.trim(),
                     category: finalCategory,
                     subCategory: formSubCategory.trim() || "General",
-                    price: formPrice,
-                    stock: formStock || "0",
-                    description: formDescription.trim(),
+                    price: finalPrice,
+                    stock: finalStock,
                     image: finalImageUrl || p.image,
+                    variants: hasVariants ? formVariants : [],
                   }
                 : p
             )
@@ -541,6 +629,21 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                       <p className="text-xs text-neutral-400">
                         {p.subCategory || "General"}
                       </p>
+                      {p.variants && p.variants.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                          <span className="text-[10px] font-semibold text-neutral-700 bg-neutral-200/70 px-1.5 py-0.5 rounded">
+                            {p.variants.length} variants:
+                          </span>
+                          {p.variants.map((v, i) => (
+                            <span
+                              key={i}
+                              className="text-[10px] bg-white border border-neutral-200 text-neutral-800 px-1.5 py-0.5 rounded font-medium"
+                            >
+                              {v.label} ({v.stock})
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -672,6 +775,21 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                             <p className="text-xs text-neutral-400 mt-0.5">
                               {p.subCategory || "General"}
                             </p>
+                            {p.variants && p.variants.length > 0 && (
+                              <div className="flex flex-wrap items-center gap-1 mt-1">
+                                <span className="text-[10px] font-semibold text-neutral-700 bg-neutral-200/60 px-1.5 py-0.5 rounded">
+                                  {p.variants.length} variants:
+                                </span>
+                                {p.variants.map((v, i) => (
+                                  <span
+                                    key={i}
+                                    className="text-[10px] bg-neutral-100 border border-neutral-200/80 text-neutral-700 px-1.5 py-0.5 rounded"
+                                  >
+                                    {v.label} ({v.stock})
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -795,10 +913,11 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
               </button>
             </div>
 
-            <form onSubmit={handleSubmitForm} className="space-y-3.5 sm:space-y-4 mt-3 sm:mt-4">
+            <form onSubmit={handleSubmitForm} className="space-y-4 mt-3 sm:mt-4">
+              {/* 1. Product Name */}
               <div>
                 <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
-                  Product Title *
+                  Product Name *
                 </label>
                 <input
                   type="text"
@@ -810,6 +929,21 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                 />
               </div>
 
+              {/* 2. Description */}
+              <div>
+                <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  rows={3}
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  placeholder="Describe materials, fit, care instructions..."
+                  className="w-full px-3.5 py-2 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black"
+                />
+              </div>
+
+              {/* 3. Category & 4. Sub-Category (Optional) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -870,7 +1004,7 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                           setFormCategory(e.target.value);
                         }
                       }}
-                      className="w-full px-3.5 py-2.5 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black cursor-pointer"
+                      className="w-full px-3.5 py-2.5 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black cursor-pointer font-medium"
                     >
                       {existingCategories.map((cat) => (
                         <option key={cat} value={cat}>
@@ -884,51 +1018,208 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
 
                 <div>
                   <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
-                    Sub-Category
+                    Sub-Category <span className="text-neutral-400 font-normal lowercase">(optional)</span>
                   </label>
                   <input
                     type="text"
                     value={formSubCategory}
                     onChange={(e) => setFormSubCategory(e.target.value)}
-                    placeholder="e.g. Graphic Tees, Chains"
+                    placeholder="e.g. Graphic Tees, Chains (optional)"
                     className="w-full px-3.5 py-2.5 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
-                    Price (PKR) *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    value={formPrice}
-                    onChange={(e) => setFormPrice(e.target.value)}
-                    placeholder="3499"
-                    className="w-full px-3.5 py-2.5 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black font-semibold"
-                  />
+              {/* 5. Pricing & Variants Section */}
+              <div className="border border-neutral-200 rounded-2xl p-3.5 sm:p-4 bg-neutral-50/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-800 flex items-center gap-1.5">
+                      <span>Pricing & Inventory</span>
+                      {hasVariants && (
+                        <span className="px-2 py-0.5 text-[10px] bg-black text-white rounded-md font-semibold">
+                          {formVariants.length} Variants
+                        </span>
+                      )}
+                    </h4>
+                    <p className="text-[11px] text-neutral-500 mt-0.5">
+                      {hasVariants
+                        ? "Standalone price is derived from your variants below."
+                        : "Enter direct price, or add multiple variants (sizes, colors)."}
+                    </p>
+                  </div>
+
+                  {!hasVariants ? (
+                    <button
+                      type="button"
+                      onClick={() => handleAddVariant("Standard", formPrice, formStock || "10")}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-black text-white hover:bg-neutral-800 rounded-xl text-xs font-semibold transition cursor-pointer shadow-xs"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Variants</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleClearAllVariants}
+                      className="text-[11px] font-semibold text-rose-600 hover:text-rose-800 hover:underline cursor-pointer"
+                    >
+                      Remove All (Use Single Price)
+                    </button>
+                  )}
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
-                    Stock Quantity *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    value={formStock}
-                    onChange={(e) => setFormStock(e.target.value)}
-                    placeholder="25"
-                    className="w-full px-3.5 py-2.5 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black font-semibold"
-                  />
-                </div>
+                {/* Standalone Price & Stock: Only shown when there are NO variants */}
+                {!hasVariants ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-1">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
+                        Price (PKR) *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        value={formPrice}
+                        onChange={(e) => setFormPrice(e.target.value)}
+                        placeholder="3499"
+                        className="w-full px-3.5 py-2.5 text-sm bg-white border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black font-semibold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
+                        Stock Quantity *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        value={formStock}
+                        onChange={(e) => setFormStock(e.target.value)}
+                        placeholder="25"
+                        className="w-full px-3.5 py-2.5 text-sm bg-white border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black font-semibold"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  /* Dynamic Variants Array Builder */
+                  <div className="space-y-3 pt-1">
+                    {/* Quick Add Presets */}
+                    <div className="flex flex-wrap items-center gap-1.5 pb-1">
+                      <span className="text-[11px] font-semibold text-neutral-500 mr-1">Presets:</span>
+                      <button
+                        type="button"
+                        onClick={handleQuickAddSizes}
+                        className="px-2 py-1 text-[11px] font-semibold bg-white border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-100 hover:border-neutral-300 transition cursor-pointer"
+                      >
+                        + S, M, L, XL
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAddVariant("One Size", formPrice, "25")}
+                        className="px-2 py-1 text-[11px] font-semibold bg-white border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-100 hover:border-neutral-300 transition cursor-pointer"
+                      >
+                        + Free / One Size
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAddVariant("", formPrice, "10")}
+                        className="px-2 py-1 text-[11px] font-semibold bg-white border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-100 hover:border-neutral-300 transition cursor-pointer ml-auto flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>+ Custom Variant</span>
+                      </button>
+                    </div>
+
+                    {/* Variants Rows */}
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-0.5">
+                      {formVariants.map((variant, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-2 p-2.5 bg-white border border-neutral-200 rounded-xl shadow-xs"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <label className="block text-[10px] font-bold uppercase text-neutral-400 mb-0.5">
+                              Variant / Size *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={variant.label}
+                              onChange={(e) => handleUpdateVariant(idx, "label", e.target.value)}
+                              placeholder="e.g. Small, M, Red / XL"
+                              className="w-full px-2.5 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg focus:outline-hidden focus:border-black font-semibold"
+                            />
+                          </div>
+
+                          <div className="w-28 sm:w-32">
+                            <label className="block text-[10px] font-bold uppercase text-neutral-400 mb-0.5">
+                              Price (PKR) *
+                            </label>
+                            <input
+                              type="number"
+                              required
+                              min="1"
+                              value={variant.price || ""}
+                              onChange={(e) => handleUpdateVariant(idx, "price", e.target.value)}
+                              placeholder="2999"
+                              className="w-full px-2.5 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg focus:outline-hidden focus:border-black font-semibold"
+                            />
+                          </div>
+
+                          <div className="w-20 sm:w-24">
+                            <label className="block text-[10px] font-bold uppercase text-neutral-400 mb-0.5">
+                              Stock *
+                            </label>
+                            <input
+                              type="number"
+                              required
+                              min="0"
+                              value={variant.stock}
+                              onChange={(e) => handleUpdateVariant(idx, "stock", e.target.value)}
+                              placeholder="10"
+                              className="w-full px-2.5 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg focus:outline-hidden focus:border-black font-semibold"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveVariant(idx)}
+                            className="mt-4 p-1.5 text-neutral-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer shrink-0"
+                            title="Remove this variant"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Summary Bar */}
+                    <div className="flex flex-wrap items-center justify-between text-xs bg-neutral-100/80 px-3 py-2 rounded-xl text-neutral-700 font-medium">
+                      <div className="flex items-center gap-3">
+                        <span>
+                          Variants: <strong className="text-black">{formVariants.length}</strong>
+                        </span>
+                        <span>
+                          Total Stock: <strong className="text-black">{totalVariantStock} units</strong>
+                        </span>
+                      </div>
+                      <div>
+                        <span>
+                          Base Price:{" "}
+                          <strong className="text-black">
+                            PKR {minVariantPrice.toLocaleString()}
+                            {minVariantPrice !== maxVariantPrice && ` - ${maxVariantPrice.toLocaleString()}`}
+                          </strong>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Product Image Section */}
+              {/* 6. Product Image Section */}
               <div>
                 <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
                   Product Image
@@ -994,20 +1285,6 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                     className="w-full px-3 py-2 text-xs bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:border-black"
                   />
                 </div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
-                  Product Description
-                </label>
-                <textarea
-                  rows={3}
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  placeholder="Describe materials, fit, care instructions..."
-                  className="w-full px-3.5 py-2 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black"
-                />
               </div>
 
               {/* Footer Buttons */}

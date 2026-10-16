@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from "@/app/lib/db";
-import { orders, products, discountCodes, Order, Product, DiscountCode } from "@/app/db/schema";
+import { orders, products, discountCodes, Order, Product, ProductVariant, DiscountCode } from "@/app/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { connection } from "next/server";
@@ -31,6 +31,10 @@ export async function ensureTablesExist() {
         image TEXT,
         variants JSONB NOT NULL DEFAULT '[]'::jsonb
       );
+    `);
+
+    await db.execute(sql`
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS variants JSONB NOT NULL DEFAULT '[]'::jsonb;
     `);
 
     await db.execute(sql`
@@ -275,8 +279,34 @@ export async function addProductAction(formData: FormData) {
     const description = (formData.get("description") as string) || "No description provided.";
     const category = formData.get("category") as string;
     const subCategory = (formData.get("subCategory") as string) || "General";
-    const price = formData.get("price") as string;
-    const stock = formData.get("stock") as string;
+    let price = formData.get("price") as string;
+    let stock = formData.get("stock") as string;
+
+    const variantsRaw = formData.get("variants") as string | null;
+    let parsedVariants: ProductVariant[] = [];
+    if (variantsRaw) {
+      try {
+        const raw = JSON.parse(variantsRaw);
+        if (Array.isArray(raw)) {
+          parsedVariants = raw
+            .map((v: any) => ({
+              label: String(v.label || "").trim(),
+              price: Math.max(0, Number(v.price) || 0),
+              stock: Math.max(0, Number(v.stock) || 0),
+            }))
+            .filter((v: ProductVariant) => v.label.length > 0);
+        }
+      } catch (e) {
+        console.warn("Failed to parse variants JSON:", e);
+      }
+    }
+
+    if (parsedVariants.length > 0) {
+      const minPrice = Math.min(...parsedVariants.map((v) => v.price));
+      price = minPrice > 0 ? minPrice.toString() : (price || "0");
+      const totalStock = parsedVariants.reduce((sum, v) => sum + v.stock, 0);
+      stock = totalStock.toString();
+    }
     
     // Cloudinary image upload handling
     const imageInput = (formData.get("image") as string) || "";
@@ -307,11 +337,12 @@ export async function addProductAction(formData: FormData) {
       price: price.toString(),
       stock: (stock || "10").toString(),
       image: finalImageUrl,
-      variants: [],
+      variants: parsedVariants,
     });
 
     revalidatePath("/admin");
     revalidatePath("/admin/manageProducts");
+    revalidatePath("/products");
     return { success: true };
   } catch (error) {
     console.error("Error adding product:", error);
@@ -390,8 +421,34 @@ export async function updateProductAction(productId: number, formData: FormData)
     const description = (formData.get("description") as string) || "No description provided.";
     const category = formData.get("category") as string;
     const subCategory = (formData.get("subCategory") as string) || "General";
-    const price = formData.get("price") as string;
-    const stock = formData.get("stock") as string;
+    let price = formData.get("price") as string;
+    let stock = formData.get("stock") as string;
+
+    const variantsRaw = formData.get("variants") as string | null;
+    let parsedVariants: ProductVariant[] | undefined = undefined;
+    if (variantsRaw !== null) {
+      try {
+        const raw = JSON.parse(variantsRaw);
+        if (Array.isArray(raw)) {
+          parsedVariants = raw
+            .map((v: any) => ({
+              label: String(v.label || "").trim(),
+              price: Math.max(0, Number(v.price) || 0),
+              stock: Math.max(0, Number(v.stock) || 0),
+            }))
+            .filter((v: ProductVariant) => v.label.length > 0);
+        }
+      } catch (e) {
+        console.warn("Failed to parse variants JSON in updateProductAction:", e);
+      }
+    }
+
+    if (parsedVariants && parsedVariants.length > 0) {
+      const minPrice = Math.min(...parsedVariants.map((v) => v.price));
+      price = minPrice > 0 ? minPrice.toString() : (price || "0");
+      const totalStock = parsedVariants.reduce((sum, v) => sum + v.stock, 0);
+      stock = totalStock.toString();
+    }
 
     const imageInput = (formData.get("image") as string) || "";
     let finalImageUrl = imageInput.trim();
@@ -424,6 +481,10 @@ export async function updateProductAction(productId: number, formData: FormData)
       price: price.toString(),
       stock: (stock || "0").toString(),
     };
+
+    if (parsedVariants !== undefined) {
+      updateFields.variants = parsedVariants;
+    }
 
     if (finalImageUrl) {
       updateFields.image = finalImageUrl;
