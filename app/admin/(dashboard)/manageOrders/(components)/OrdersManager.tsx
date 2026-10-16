@@ -133,6 +133,314 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
     setOrdersList(initialOrders);
   }, [initialOrders]);
 
+  // Clean, isolated 1-page printable invoice generator
+  const printInvoiceDocument = (order: Order) => {
+    const items = order.items || [];
+    const itemsSubtotal = items.reduce(
+      (sum: number, it: any) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1),
+      0
+    );
+    const discount = Number(order.discountAmount) || 0;
+    const totalAmount = Number(order.totalAmount) || 0;
+    const calculatedShipping = Math.max(0, totalAmount - (itemsSubtotal - discount));
+    const orderDate = order.createdAt
+      ? new Date(order.createdAt).toLocaleDateString("en-PK", { dateStyle: "long" })
+      : "Recent";
+
+    const itemsRows = items
+      .map((it: any) => {
+        const lineTotal = (Number(it.price) || 0) * (Number(it.quantity) || 1);
+        return `
+        <tr>
+          <td style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #111;">
+            ${it.name || "Product"}
+          </td>
+          <td style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">
+            ${it.variant ? `<span style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 11px;">${it.variant}</span>` : "Standard"}
+          </td>
+          <td style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: center; font-weight: 700; color: #111;">
+            ${it.quantity}
+          </td>
+          <td style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #374151;">
+            PKR ${Number(it.price).toLocaleString()}
+          </td>
+          <td style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 700; color: #111;">
+            PKR ${lineTotal.toLocaleString()}
+          </td>
+        </tr>
+      `;
+      })
+      .join("");
+
+    const invoiceHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Invoice #ORD-${order.id.toString().padStart(4, "0")} - ${order.orderCode || ""} | BAZAARIO</title>
+          <style>
+            @page {
+              size: A4 portrait;
+              margin: 10mm 14mm;
+            }
+            *, *:before, *:after { box-sizing: border-box; margin: 0; padding: 0; }
+            html, body {
+              background: #fff;
+              color: #111;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+              font-size: 12.5px;
+              line-height: 1.35;
+            }
+            .invoice-card {
+              max-width: 720px;
+              margin: 0 auto;
+              padding: 6px 0;
+            }
+            .header-bar {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              border-bottom: 2px solid #000;
+              padding-bottom: 10px;
+              margin-bottom: 14px;
+            }
+            .brand-title {
+              font-size: 24px;
+              font-weight: 900;
+              letter-spacing: -0.5px;
+            }
+            .brand-sub {
+              font-size: 11px;
+              color: #4b5563;
+              margin-top: 1px;
+            }
+            .order-meta {
+              text-align: right;
+            }
+            .order-id {
+              font-family: monospace;
+              font-size: 18px;
+              font-weight: 800;
+              color: #000;
+            }
+            .tracking-badge {
+              display: inline-block;
+              font-family: monospace;
+              font-size: 11px;
+              font-weight: 700;
+              background: #f3f4f6;
+              border: 1px solid #d1d5db;
+              padding: 2px 8px;
+              border-radius: 4px;
+              margin-top: 3px;
+            }
+            .order-date {
+              font-size: 11px;
+              color: #6b7280;
+              margin-top: 3px;
+            }
+            .customer-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 12px;
+              background: #f9fafb;
+              border: 1px solid #e5e7eb;
+              border-radius: 8px;
+              padding: 12px 14px;
+              margin-bottom: 14px;
+            }
+            .field-label {
+              font-size: 10px;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              color: #6b7280;
+              margin-bottom: 3px;
+            }
+            .field-name {
+              font-size: 13px;
+              font-weight: 700;
+              color: #111;
+              margin-bottom: 2px;
+            }
+            .field-text {
+              font-size: 12px;
+              color: #4b5563;
+            }
+            .section-label {
+              font-size: 11px;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              color: #4b5563;
+              margin-bottom: 6px;
+            }
+            .table-wrap {
+              border: 1px solid #e5e7eb;
+              border-radius: 8px;
+              overflow: hidden;
+              margin-bottom: 14px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 12px;
+            }
+            th {
+              background: #f3f4f6;
+              padding: 7px 10px;
+              text-align: left;
+              font-size: 10px;
+              text-transform: uppercase;
+              color: #4b5563;
+              border-bottom: 1px solid #e5e7eb;
+            }
+            .summary-card {
+              background: #f9fafb;
+              border: 1px solid #e5e7eb;
+              border-radius: 8px;
+              padding: 12px 14px;
+              margin-bottom: 16px;
+            }
+            .summary-line {
+              display: flex;
+              justify-content: space-between;
+              font-size: 12px;
+              color: #4b5563;
+              margin-bottom: 5px;
+            }
+            .grand-total-line {
+              display: flex;
+              justify-content: space-between;
+              border-top: 1px solid #d1d5db;
+              padding-top: 8px;
+              margin-top: 6px;
+              font-size: 15px;
+              font-weight: 800;
+              color: #000;
+            }
+            .footer-card {
+              text-align: center;
+              border-top: 1px solid #e5e7eb;
+              padding-top: 10px;
+              font-size: 11px;
+              color: #6b7280;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-card">
+            <div class="header-bar">
+              <div>
+                <div class="brand-title">BAZAARIO</div>
+                <div class="brand-sub">Store Fulfillment & Official Tax Invoice</div>
+                <div class="brand-sub">Helpline: +92 333 2244373 • Karachi, Pakistan</div>
+              </div>
+              <div class="order-meta">
+                <div class="order-id">#ORD-${order.id.toString().padStart(4, "0")}</div>
+                ${order.orderCode ? `<div class="tracking-badge">Tracking Code: ${order.orderCode}</div>` : ""}
+                <div class="order-date">${orderDate}</div>
+              </div>
+            </div>
+
+            <div class="customer-grid">
+              <div>
+                <div class="field-label">Customer Contact</div>
+                <div class="field-name">${order.customerName}</div>
+                <div class="field-text">${order.customerEmail}</div>
+                ${order.phone ? `<div class="field-text" style="font-family: monospace; margin-top: 2px;">Phone: ${order.phone}</div>` : ""}
+              </div>
+              <div>
+                <div class="field-label">Shipping Address</div>
+                <div class="field-name">${[order.city, order.country].filter(Boolean).join(", ") || "Pakistan"}</div>
+                <div class="field-text">${order.address || "Standard Delivery"}</div>
+              </div>
+            </div>
+
+            <div class="section-label">Order Items (${items.length})</div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 44%;">Item</th>
+                    <th>Variant</th>
+                    <th style="text-align: center;">Qty</th>
+                    <th style="text-align: right;">Price</th>
+                    <th style="text-align: right;">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${itemsRows}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="summary-card">
+              <div class="summary-line">
+                <span>Payment Method:</span>
+                <span style="font-weight: 700; text-transform: uppercase; color: #111;">
+                  ${order.paymentMethod === "bank_transfer" ? "Bank Transfer" : "Cash on Delivery"}
+                </span>
+              </div>
+              <div class="summary-line">
+                <span>Items Subtotal:</span>
+                <span style="font-weight: 600; color: #111;">PKR ${itemsSubtotal.toLocaleString()}</span>
+              </div>
+              ${order.discountCode ? `
+                <div class="summary-line" style="color: #047857;">
+                  <span>Coupon Applied (${order.discountCode}):</span>
+                  <span>-PKR ${discount.toLocaleString()}</span>
+                </div>
+              ` : ""}
+              <div class="summary-line">
+                <span>Shipping:</span>
+                <span style="font-weight: 600; color: ${calculatedShipping > 0 ? "#111" : "#047857"};">
+                  ${calculatedShipping > 0 ? `PKR ${calculatedShipping.toLocaleString()}` : "FREE"}
+                </span>
+              </div>
+              <div class="grand-total-line">
+                <span>Grand Total:</span>
+                <span>PKR ${totalAmount.toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div class="footer-card">
+              <p style="font-weight: 700; color: #111;">Thank you for shopping with BAZAARIO</p>
+              <p style="margin-top: 2px;">Karachi, Pakistan • Helpline: +92 333 2244373 • www.bazaario.pk</p>
+              <p style="font-size: 10px; color: #9ca3af; margin-top: 4px;">This is a computer generated official invoice and packing slip.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    // Direct isolated iframe printing for 100% 1-page accuracy
+    let iframe = document.getElementById("bazaario-print-iframe") as HTMLIFrameElement;
+    if (!iframe) {
+      iframe = document.createElement("iframe");
+      iframe.id = "bazaario-print-iframe";
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "none";
+      iframe.style.visibility = "hidden";
+      document.body.appendChild(iframe);
+    }
+
+    const doc = iframe.contentWindow?.document || iframe.contentDocument;
+    if (doc) {
+      doc.open();
+      doc.write(invoiceHtml);
+      doc.close();
+      setTimeout(() => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      }, 200);
+    }
+  };
+
   // Status updates
   const handleUpdateStatus = (orderId: number, newStatus: string) => {
     // Optimistic update
@@ -710,10 +1018,7 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
                             <FileText className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => {
-                              setSelectedDetailsOrder(o);
-                              setTimeout(() => window.print(), 250);
-                            }}
+                            onClick={() => printInvoiceDocument(o)}
                             className="p-2 text-neutral-500 hover:text-black hover:bg-neutral-100 rounded-xl transition cursor-pointer"
                             title="Print Invoice / Packing Slip"
                           >
@@ -740,95 +1045,10 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
 
       {/* MODAL 1: Full Order Details & Invoice Modal */}
       {selectedDetailsOrder && (
-        <div id="order-details-modal-backdrop" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <style>{`
-            @media print {
-              @page {
-                size: A4 portrait;
-                margin: 8mm 12mm;
-              }
-              html, body {
-                background: #ffffff !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                height: auto !important;
-                min-height: 0 !important;
-                overflow: visible !important;
-              }
-              body * {
-                visibility: hidden !important;
-              }
-              #printable-admin-invoice, #printable-admin-invoice * {
-                visibility: visible !important;
-              }
-              #order-details-modal-backdrop {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                background: transparent !important;
-                backdrop-filter: none !important;
-                -webkit-backdrop-filter: none !important;
-                display: block !important;
-                inset: auto !important;
-              }
-              #printable-admin-invoice {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
-                max-width: 100% !important;
-                height: auto !important;
-                max-height: none !important;
-                overflow: visible !important;
-                background: #ffffff !important;
-                color: #000000 !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                border: none !important;
-                box-shadow: none !important;
-                page-break-after: avoid !important;
-                break-after: avoid !important;
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-              }
-              .print\\:hidden {
-                display: none !important;
-              }
-              .print\\:block {
-                display: block !important;
-              }
-            }
-          `}</style>
-
-          <div
-            id="printable-admin-invoice"
-            className="bg-white rounded-3xl max-w-2xl w-full p-6 print:p-0 shadow-2xl border border-neutral-200 max-h-[92vh] overflow-y-auto space-y-5 print:space-y-3"
-          >
-            {/* Printable Store Official Header (visible on paper/print) */}
-            <div className="hidden print:block border-b-2 border-neutral-900 pb-4 mb-2">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h1 className="text-2xl font-black tracking-tight">BAZAARIO</h1>
-                  <p className="text-xs text-neutral-600">Store Fulfillment & Official Tax Invoice</p>
-                  <p className="text-xs text-neutral-500">Helpline: +92 333 2244373 • Karachi, Pakistan</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-mono font-bold text-lg">#ORD-{selectedDetailsOrder.id.toString().padStart(4, "0")}</p>
-                  {selectedDetailsOrder.orderCode && (
-                    <p className="font-mono text-xs font-bold text-neutral-800">Tracking Code: {selectedDetailsOrder.orderCode}</p>
-                  )}
-                  <p className="text-xs text-neutral-500" suppressHydrationWarning>
-                    {selectedDetailsOrder.createdAt ? new Date(selectedDetailsOrder.createdAt).toLocaleDateString("en-PK", { dateStyle: "long" }) : ""}
-                  </p>
-                </div>
-              </div>
-            </div>
-
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-neutral-200 max-h-[92vh] overflow-y-auto space-y-5">
             {/* Modal Screen Header */}
-            <div className="flex items-start justify-between pb-4 border-b border-neutral-100 print:hidden">
+            <div className="flex items-start justify-between pb-4 border-b border-neutral-100">
               <div>
                 <span className="text-xs uppercase tracking-wider font-semibold text-neutral-400">Order Invoice & Packing Slip</span>
                 <div className="flex items-center gap-2 mt-0.5">
@@ -861,7 +1081,7 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => window.print()}
+                  onClick={() => printInvoiceDocument(selectedDetailsOrder)}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black hover:bg-neutral-800 text-white rounded-xl text-xs font-semibold shadow-xs transition cursor-pointer"
                   title="Print Packing Slip / Invoice"
                 >
@@ -1008,7 +1228,7 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
 
             {/* Bank Transfer Receipt Link if exists */}
             {selectedDetailsOrder.paymentMethod === "bank_transfer" && (
-              <div className="p-3 bg-purple-50/60 border border-purple-100 rounded-2xl flex items-center justify-between text-xs print:hidden">
+              <div className="p-3 bg-purple-50/60 border border-purple-100 rounded-2xl flex items-center justify-between text-xs">
                 <div>
                   <span className="font-semibold text-purple-950 block">Bank Transfer Status:</span>
                   <span className="text-purple-700 font-medium">
@@ -1029,7 +1249,7 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
             )}
 
             {/* Bottom Actions */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-neutral-100 print:hidden">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-neutral-100">
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <span className="text-xs font-semibold text-neutral-500">Status:</span>
                 <select
@@ -1048,7 +1268,7 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <button
                   type="button"
-                  onClick={() => window.print()}
+                  onClick={() => printInvoiceDocument(selectedDetailsOrder)}
                   className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-semibold rounded-xl inline-flex items-center justify-center gap-1.5 transition cursor-pointer w-full sm:w-auto"
                 >
                   <Printer className="w-3.5 h-3.5" />
@@ -1062,13 +1282,6 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
                   Done
                 </button>
               </div>
-            </div>
-
-            {/* Official Print Footer */}
-            <div className="hidden print:block pt-3 border-t border-neutral-200 text-center text-xs text-neutral-500">
-              <p className="font-semibold text-neutral-800">Thank you for shopping with BAZAARIO</p>
-              <p className="mt-0.5 text-[11px]">Karachi, Pakistan • Helpline: +92 333 2244373 • www.bazaario.pk</p>
-              <p className="text-[10px] text-neutral-400 mt-1">This is a computer generated official invoice & packing slip.</p>
             </div>
           </div>
         </div>
