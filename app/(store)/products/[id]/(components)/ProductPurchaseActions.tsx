@@ -105,7 +105,7 @@ export default function ProductPurchaseActions({
                       setQuantity(vStock);
                     }
                   }}
-                  className={`px-4 py-2 border rounded-xl text-sm font-medium transition cursor-pointer flex items-center gap-2 ${
+                  className={`px-3.5 sm:px-4 py-2 border rounded-xl text-xs sm:text-sm font-medium transition cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 max-w-full min-h-[42px] touch-manipulation ${
                     isSelected
                       ? "border-black bg-black text-white shadow-xs"
                       : isVOutOfStock
@@ -113,14 +113,14 @@ export default function ProductPurchaseActions({
                       : "border-neutral-200 text-neutral-800 hover:border-neutral-400 bg-white"
                   }`}
                 >
-                  <span>{v.label}</span>
+                  <span className="font-semibold">{v.label}</span>
                   {Number(v.price) !== price && (
-                    <span className={`text-xs ${isSelected ? "text-neutral-300" : "text-neutral-500"}`}>
+                    <span className={`text-[11px] sm:text-xs shrink-0 ${isSelected ? "text-neutral-300" : "text-neutral-500"}`}>
                       PKR {Number(v.price).toLocaleString()}
                     </span>
                   )}
                   {isVOutOfStock && (
-                    <span className="text-[10px] text-rose-500 font-bold uppercase">(Sold Out)</span>
+                    <span className="text-[10px] text-rose-500 font-bold uppercase shrink-0">(Sold Out)</span>
                   )}
                 </button>
               );
