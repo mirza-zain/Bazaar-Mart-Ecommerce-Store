@@ -10,7 +10,6 @@ import {
   Tag,
   LogOut,
   ShieldCheck,
-  Smartphone,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -105,20 +104,6 @@ export default function Navbar({ user }: NavbarProps) {
       </div>
 
       <div className="mt-4 border-t border-neutral-100 pt-4 md:mt-auto md:pt-6 space-y-1">
-        {/* Install on Phone Trigger */}
-        <button
-          type="button"
-          onClick={() => {
-            if (typeof window !== "undefined") {
-              window.dispatchEvent(new CustomEvent("open-admin-install-modal"));
-            }
-          }}
-          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-amber-700 hover:text-amber-900 hover:bg-amber-50 rounded-xl transition cursor-pointer"
-        >
-          <Smartphone className="size-4 shrink-0 text-amber-600" />
-          <span>Install on Phone</span>
-        </button>
-
         {/* Sign Out Button */}
         <button
           type="button"

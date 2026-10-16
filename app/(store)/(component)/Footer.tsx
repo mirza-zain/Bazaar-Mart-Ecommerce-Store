@@ -144,14 +144,6 @@ export default function Footer() {
                 <MapPin className="w-4 h-4 text-neutral-400 shrink-0" />
                 <span>Karachi, Pakistan</span>
               </li>
-              <li className="pt-2">
-                <Link
-                  href="/admin"
-                  className="inline-block text-xs text-neutral-400 hover:text-white underline"
-                >
-                  Store Admin Console →
-                </Link>
-              </li>
             </ul>
           </div>
         </div>
