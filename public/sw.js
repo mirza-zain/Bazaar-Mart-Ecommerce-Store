@@ -1,4 +1,20 @@
-// Bazaario Service Worker for Web Push Notifications
+// Bazaario Service Worker for Web Push Notifications & PWA Installation
+
+self.addEventListener('install', function (event) {
+  // Activate worker immediately
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', function (event) {
+  // Claim all active clients so the service worker is immediately active
+  event.waitUntil(self.clients.claim());
+});
+
+// Pass-through fetch event handler required by Chrome PWA installability criteria
+self.addEventListener('fetch', function (event) {
+  // Allow all network requests to proceed normally through Next.js
+  return;
+});
 
 self.addEventListener('push', function (event) {
   if (!event.data) return;
@@ -8,8 +24,8 @@ self.addEventListener('push', function (event) {
     const title = payload.title || 'Bazaario Notification';
     const options = {
       body: payload.body || 'You have a new update.',
-      icon: payload.icon || '/favicon.ico',
-      badge: payload.badge || '/favicon.ico',
+      icon: payload.icon || '/icon-192x192.png',
+      badge: payload.badge || '/icon-192x192.png',
       vibrate: [200, 100, 200],
       tag: payload.data?.orderId ? `order-${payload.data.orderId}` : 'bazaario-alert',
       data: {

@@ -1,6 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { CartProvider } from "@/app/context/CartContext";
+
+export const viewport: Viewport = {
+  themeColor: "#09090b",
+};
 
 export const metadata: Metadata = {
   title: {
@@ -9,6 +13,17 @@ export const metadata: Metadata = {
   },
   description:
     "Explore modern streetwear hoodies, tees, fine jewelry, and accessories at Bazaario. Free express shipping over PKR 8,000 across Pakistan with Cash on Delivery and Bank Transfer.",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
   keywords: [
     "Bazaario",
     "streetwear Pakistan",

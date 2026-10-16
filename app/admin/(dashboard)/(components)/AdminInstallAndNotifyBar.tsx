@@ -12,8 +12,8 @@ import {
   X,
   Send,
   AlertTriangle,
-  ArrowRight,
-  ShieldCheck,
+  Copy,
+  Check,
 } from 'lucide-react';
 import {
   savePushSubscriptionAction,
@@ -39,7 +39,9 @@ export default function AdminInstallAndNotifyBar() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [showIOSModal, setShowIOSModal] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'android' | 'ios'>('android');
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     // 1. Check if running in standalone mode (already installed as PWA)
@@ -52,39 +54,55 @@ export default function AdminInstallAndNotifyBar() {
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isAppleDevice = /iphone|ipad|ipod/.test(userAgent);
     setIsIOS(isAppleDevice);
+    if (isAppleDevice) {
+      setActiveTab('ios');
+    }
 
-    // 3. Listen for Android/Chrome beforeinstallprompt
+    // 3. Automatically register service worker for PWA criteria & push notifications
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/sw.js', { scope: '/' })
+        .then((reg) => {
+          if ('PushManager' in window) {
+            reg.pushManager.getSubscription().then((sub) => {
+              setIsSubscribed(!!sub);
+            });
+          }
+        })
+        .catch((err) => {
+          console.warn('Service worker registration error:', err);
+        });
+    }
+
+    // 4. Capture Chrome/Android beforeinstallprompt event
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
     };
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
-    // 4. Check push notification subscription status
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      navigator.serviceWorker.getRegistration('/sw.js').then((reg) => {
-        if (reg) {
-          reg.pushManager.getSubscription().then((sub) => {
-            setIsSubscribed(!!sub);
-          });
-        }
-      });
-    }
+    // 5. Capture app installed event
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+    };
+    window.addEventListener('appinstalled', handleAppInstalled);
 
     const handleOpenModal = () => {
       if (deferredPrompt) {
-        deferredPrompt.prompt();
+        deferredPrompt.prompt().catch(() => setShowInstallModal(true));
       } else {
-        setShowIOSModal(true);
+        setShowInstallModal(true);
       }
     };
     window.addEventListener('open-admin-install-modal', handleOpenModal);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('open-admin-install-modal', handleOpenModal);
     };
-  }, [deferredPrompt]);
+  }, []);
 
   // Handle Enable Notifications
   const handleEnableNotifications = async () => {
@@ -180,17 +198,28 @@ export default function AdminInstallAndNotifyBar() {
   // Handle Install Admin App on Phone
   const handleInstallApp = async () => {
     if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setIsInstalled(true);
+      try {
+        await deferredPrompt.prompt();
+        const choice = await deferredPrompt.userChoice;
+        if (choice?.outcome === 'accepted') {
+          setIsInstalled(true);
+          setDeferredPrompt(null);
+          return;
+        }
+      } catch (err) {
+        console.warn('Install prompt error:', err);
       }
-      setDeferredPrompt(null);
-    } else if (isIOS) {
-      setShowIOSModal(true);
-    } else {
-      // Fallback for browsers without direct prompt
-      setShowIOSModal(true);
+    }
+    setShowInstallModal(true);
+  };
+
+  const handleCopyLink = () => {
+    if (typeof window !== 'undefined') {
+      const url = `${window.location.origin}/admin`;
+      navigator.clipboard.writeText(url).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      });
     }
   };
 
@@ -304,72 +333,175 @@ export default function AdminInstallAndNotifyBar() {
         )}
       </div>
 
-      {/* iOS & Manual Installation Modal */}
-      {showIOSModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border border-zinc-700/80 rounded-3xl max-w-md w-full p-6 text-white space-y-5 shadow-2xl relative">
+      {/* Installation Modal */}
+      {showInstallModal && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-zinc-900 border border-zinc-700/80 rounded-3xl max-w-md w-full p-5 sm:p-6 text-white space-y-4 shadow-2xl relative">
             <button
-              onClick={() => setShowIOSModal(false)}
+              onClick={() => setShowInstallModal(false)}
               className="absolute top-5 right-5 text-zinc-400 hover:text-white p-1.5 rounded-xl hover:bg-zinc-800 transition"
+              aria-label="Close"
             >
               <X className="w-5 h-5" />
             </button>
 
+            {/* Header */}
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
                 <Smartphone className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-bold text-lg text-white">Install Admin on Phone</h3>
-                <p className="text-xs text-zinc-400">Add to your Home Screen in 3 seconds</p>
+                <h3 className="font-bold text-base sm:text-lg text-white">Install Bazaario Admin</h3>
+                <p className="text-xs text-zinc-400">Add to your Phone Home Screen in seconds</p>
               </div>
             </div>
 
-            <div className="space-y-3 pt-2">
-              <div className="flex items-start gap-3 p-3 bg-zinc-950/80 rounded-2xl border border-zinc-800/80">
-                <div className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center text-xs font-bold text-white shrink-0 mt-0.5">
-                  1
-                </div>
-                <div className="text-xs leading-relaxed text-zinc-300">
-                  Open this page on your phone&apos;s browser (<span className="text-white font-semibold">Safari on iPhone</span> or <span className="text-white font-semibold">Chrome on Android</span>).
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 bg-zinc-950/80 rounded-2xl border border-zinc-800/80">
-                <div className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center text-xs font-bold text-white shrink-0 mt-0.5">
-                  2
-                </div>
-                <div className="text-xs leading-relaxed text-zinc-300">
-                  Tap the browser&apos;s menu / share icon:
-                  <div className="mt-1.5 flex items-center gap-2 text-amber-400 font-semibold">
-                    <Share2 className="w-4 h-4 shrink-0" />
-                    <span>Share Button (Safari bottom bar)</span>
-                  </div>
-                  <div className="mt-1 flex items-center gap-2 text-amber-400 font-semibold">
-                    <span>⋮ (Chrome top-right menu)</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 bg-zinc-950/80 rounded-2xl border border-zinc-800/80">
-                <div className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center text-xs font-bold text-white shrink-0 mt-0.5">
-                  3
-                </div>
-                <div className="text-xs leading-relaxed text-zinc-300">
-                  Scroll down and tap <span className="text-white font-semibold">&quot;Add to Home Screen&quot;</span> (
-                  <PlusSquare className="w-3.5 h-3.5 inline mx-1 text-emerald-400" />
-                  ), then confirm by tapping <span className="text-white font-semibold">&quot;Add&quot;</span>.
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-2">
+            {/* OS Selector Tabs */}
+            <div className="flex rounded-xl bg-zinc-950/80 p-1 border border-zinc-800">
               <button
                 type="button"
-                onClick={() => setShowIOSModal(false)}
-                className="w-full py-3 bg-white hover:bg-zinc-200 text-black font-semibold text-xs rounded-xl transition cursor-pointer"
+                onClick={() => setActiveTab('android')}
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${
+                  activeTab === 'android'
+                    ? 'bg-amber-500 text-zinc-950 shadow'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
               >
-                Got It!
+                Android / Chrome
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('ios')}
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${
+                  activeTab === 'ios'
+                    ? 'bg-amber-500 text-zinc-950 shadow'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                iPhone / Safari
+              </button>
+            </div>
+
+            {/* Direct Prompt Banner if available */}
+            {deferredPrompt && activeTab === 'android' && (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between gap-3">
+                <div className="text-xs text-amber-300">
+                  <span className="font-semibold text-white">Ready to install!</span> Your browser supports 1-click install.
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await deferredPrompt.prompt();
+                      const choice = await deferredPrompt.userChoice;
+                      if (choice?.outcome === 'accepted') {
+                        setIsInstalled(true);
+                        setShowInstallModal(false);
+                      }
+                    } catch (e) {
+                      console.warn(e);
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs rounded-xl transition shrink-0 cursor-pointer"
+                >
+                  Install Now
+                </button>
+              </div>
+            )}
+
+            {/* Steps Guide */}
+            {activeTab === 'android' ? (
+              <div className="space-y-2.5">
+                <div className="flex items-start gap-3 p-3 bg-zinc-950/80 rounded-2xl border border-zinc-800/80">
+                  <div className="w-6 h-6 rounded-lg bg-zinc-800 flex items-center justify-center text-xs font-bold text-amber-400 shrink-0 mt-0.5">
+                    1
+                  </div>
+                  <div className="text-xs leading-relaxed text-zinc-300">
+                    Open this page in <span className="text-white font-semibold">Google Chrome</span>. If you opened this link from WhatsApp or Facebook, tap <span className="text-white font-semibold">⋮ &rarr; &quot;Open in Chrome&quot;</span>.
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-zinc-950/80 rounded-2xl border border-zinc-800/80">
+                  <div className="w-6 h-6 rounded-lg bg-zinc-800 flex items-center justify-center text-xs font-bold text-amber-400 shrink-0 mt-0.5">
+                    2
+                  </div>
+                  <div className="text-xs leading-relaxed text-zinc-300">
+                    Tap Chrome&apos;s <span className="text-white font-semibold">three-dot menu (⋮)</span> in the top-right corner.
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-zinc-950/80 rounded-2xl border border-zinc-800/80">
+                  <div className="w-6 h-6 rounded-lg bg-zinc-800 flex items-center justify-center text-xs font-bold text-amber-400 shrink-0 mt-0.5">
+                    3
+                  </div>
+                  <div className="text-xs leading-relaxed text-zinc-300">
+                    Tap <span className="text-white font-semibold">&quot;Install app&quot;</span> (or <span className="text-white font-semibold">&quot;Add to Home screen&quot;</span>) and tap <span className="text-emerald-400 font-semibold">Install</span>.
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                <div className="flex items-start gap-3 p-3 bg-zinc-950/80 rounded-2xl border border-zinc-800/80">
+                  <div className="w-6 h-6 rounded-lg bg-zinc-800 flex items-center justify-center text-xs font-bold text-amber-400 shrink-0 mt-0.5">
+                    1
+                  </div>
+                  <div className="text-xs leading-relaxed text-zinc-300">
+                    Open this page in <span className="text-white font-semibold">Safari</span> (Apple only supports home-screen web apps in Safari).
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-zinc-950/80 rounded-2xl border border-zinc-800/80">
+                  <div className="w-6 h-6 rounded-lg bg-zinc-800 flex items-center justify-center text-xs font-bold text-amber-400 shrink-0 mt-0.5">
+                    2
+                  </div>
+                  <div className="text-xs leading-relaxed text-zinc-300">
+                    Tap the <span className="text-white font-semibold">Share button</span> (
+                    <Share2 className="w-3.5 h-3.5 inline mx-1 text-sky-400" />
+                    ) in Safari&apos;s bottom toolbar.
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-zinc-950/80 rounded-2xl border border-zinc-800/80">
+                  <div className="w-6 h-6 rounded-lg bg-zinc-800 flex items-center justify-center text-xs font-bold text-amber-400 shrink-0 mt-0.5">
+                    3
+                  </div>
+                  <div className="text-xs leading-relaxed text-zinc-300">
+                    Scroll down and tap <span className="text-white font-semibold">&quot;Add to Home Screen&quot;</span> (
+                    <PlusSquare className="w-3.5 h-3.5 inline mx-1 text-emerald-400" />
+                    ), then tap <span className="text-amber-400 font-semibold">&quot;Add&quot;</span> at the top right.
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Quick URL Copy Helper */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl text-xs font-medium border border-zinc-700/60 transition cursor-pointer"
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-emerald-400 font-semibold">Admin Link Copied to Clipboard!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                    <span>Copy Admin Link to open on mobile browser</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowInstallModal(false)}
+                className="w-full py-2.5 bg-white hover:bg-zinc-200 text-black font-semibold text-xs rounded-xl transition cursor-pointer"
+              >
+                Done
               </button>
             </div>
           </div>
