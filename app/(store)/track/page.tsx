@@ -65,10 +65,10 @@ function TrackOrderContent() {
 
       if (found) {
         try {
-          const formattedId = `#ORD-${found.id.toString().padStart(4, "0")}`;
+          const trackingCode = found.orderCode || `BAZ-${found.id.toString().padStart(4, "0")}`;
           const trackedOrderData = {
             orderId: found.id,
-            formattedId,
+            formattedId: trackingCode,
             customerName: found.customerName,
             email: found.customerEmail,
             productIds: found.items ? found.items.map((i: any) => i.productId) : [],
@@ -166,7 +166,7 @@ function TrackOrderContent() {
           Track Your Order
         </h1>
         <p className="text-neutral-500 text-sm md:text-base mt-2 max-w-md mx-auto">
-          Enter your Order ID (e.g. #ORD-0001 or 1), email, or phone number to see live status & fulfillment updates.
+          Enter your unique Tracking Code (e.g. BAZ-4829) or checkout email to see live delivery status & courier updates.
         </p>
       </div>
 
@@ -180,8 +180,8 @@ function TrackOrderContent() {
               required
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="e.g. #ORD-0001, customer@gmail.com, or phone"
-              className="w-full pl-11 pr-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl text-sm focus:outline-hidden focus:border-black transition"
+              placeholder="e.g. BAZ-4829 or customer@gmail.com"
+              className="w-full pl-11 pr-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl text-sm focus:outline-hidden focus:border-black transition font-medium"
             />
           </div>
           <button
@@ -207,11 +207,11 @@ function TrackOrderContent() {
                   </span>
                   <div className="flex items-center gap-2.5 mt-0.5 flex-wrap">
                     <h3 className="text-2xl sm:text-3xl font-bold text-neutral-900 font-mono">
-                      #ORD-{order.id.toString().padStart(4, "0")}
+                      {order.orderCode || `BAZ-${order.id.toString().padStart(4, "0")}`}
                     </h3>
                     <button
                       type="button"
-                      onClick={() => handleCopyTrackingId(`#ORD-${order.id.toString().padStart(4, "0")}`)}
+                      onClick={() => handleCopyTrackingId(order.orderCode || `BAZ-${order.id.toString().padStart(4, "0")}`)}
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 transition active:scale-95 cursor-pointer shadow-2xs"
                       title="Copy Tracking ID"
                     >
@@ -461,7 +461,9 @@ function TrackOrderContent() {
               <AlertCircle className="w-12 h-12 text-neutral-400 mx-auto" />
               <h3 className="text-xl font-bold text-neutral-900">Order Not Found</h3>
               <p className="text-sm text-neutral-500 max-w-sm mx-auto">
-                No active order found matching &quot;{query}&quot;. Please verify your Order ID or email, or get in touch with our team.
+                {/^\d+$/.test(query.trim())
+                  ? "For customer privacy and security, order tracking requires your unique tracking code (e.g. BAZ-4829) or checkout email rather than a numeric ID."
+                  : `No active order found matching "${query}". Please verify your unique tracking code (e.g. BAZ-4829) or checkout email, or get in touch with our team.`}
               </p>
               <div className="pt-3">
                 <Link

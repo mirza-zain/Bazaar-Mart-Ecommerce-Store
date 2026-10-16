@@ -250,6 +250,7 @@ export default function AdminClientView({
     return (
       formattedId.includes(query) ||
       o.id.toString() === query ||
+      (o.orderCode && o.orderCode.toLowerCase().includes(query)) ||
       o.customerName.toLowerCase().includes(query) ||
       o.customerEmail.toLowerCase().includes(query) ||
       o.status.toLowerCase().includes(query)
@@ -534,8 +535,13 @@ export default function AdminClientView({
 
                     return (
                       <tr key={o.id} className="hover:bg-neutral-50/60 transition">
-                        <td className="py-3 px-4 font-mono font-bold text-neutral-800">
-                          #ORD-{o.id.toString().padStart(4, "0")}
+                        <td className="py-3 px-4 font-mono">
+                          <p className="font-bold text-neutral-800">#ORD-{o.id.toString().padStart(4, "0")}</p>
+                          {o.orderCode && (
+                            <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-neutral-100 text-neutral-700 border border-neutral-200">
+                              {o.orderCode}
+                            </span>
+                          )}
                         </td>
 
                         <td className="py-3 px-4">

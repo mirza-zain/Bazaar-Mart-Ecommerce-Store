@@ -216,6 +216,7 @@ export default function CheckoutPage() {
   } | null>(null);
   const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState<number | null>(null);
+  const [placedOrderCode, setPlacedOrderCode] = useState<string | null>(null);
   const [copiedTrackingId, setCopiedTrackingId] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -425,11 +426,14 @@ export default function CheckoutPage() {
       if (res.success && res.orderId) {
         clearCart();
         setPlacedOrderId(res.orderId);
+        if (res.orderCode) {
+          setPlacedOrderCode(res.orderCode);
+        }
         try {
-          const formattedId = `#ORD-${res.orderId.toString().padStart(4, "0")}`;
+          const trackingCode = res.orderCode || `BAZ-${res.orderId.toString().padStart(4, "0")}`;
           const newOrderData = {
             orderId: res.orderId,
-            formattedId,
+            formattedId: trackingCode,
             customerName: fullName,
             email: trimmedEmail,
             phone: formattedPhone,
@@ -491,7 +495,7 @@ export default function CheckoutPage() {
   }
 
   if (placedOrderId) {
-    const formattedId = `#ORD-${placedOrderId.toString().padStart(4, "0")}`;
+    const trackingCode = placedOrderCode || `BAZ-${placedOrderId.toString().padStart(4, "0")}`;
     return (
       <div className="w-full max-w-2xl mx-auto px-5 py-16 text-center">
         <div className="bg-white p-8 sm:p-12 rounded-3xl border border-neutral-200 shadow-sm space-y-6">
@@ -504,12 +508,12 @@ export default function CheckoutPage() {
           </h1>
 
           <div className="p-5 bg-neutral-50 rounded-2xl border border-neutral-200 inline-flex flex-col items-center gap-1.5 shadow-xs">
-            <span className="text-xs uppercase font-semibold text-neutral-400 tracking-wider">Tracking / Order ID</span>
+            <span className="text-xs uppercase font-semibold text-neutral-400 tracking-wider">Unique Tracking Code</span>
             <div className="flex items-center gap-2.5">
-              <p className="text-2xl sm:text-3xl font-mono font-bold text-neutral-900 tracking-tight">{formattedId}</p>
+              <p className="text-2xl sm:text-3xl font-mono font-bold text-neutral-900 tracking-tight">{trackingCode}</p>
               <button
                 type="button"
-                onClick={() => handleCopyTrackingId(formattedId)}
+                onClick={() => handleCopyTrackingId(trackingCode)}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-100 transition shadow-xs active:scale-95 cursor-pointer"
                 title="Copy Tracking ID"
               >
@@ -526,7 +530,7 @@ export default function CheckoutPage() {
                 )}
               </button>
             </div>
-            <p className="text-[11px] text-neutral-400">Save this ID to track your package anytime</p>
+            <p className="text-[11px] text-neutral-400">Save this unique code to trace your package anytime</p>
           </div>
 
           <p className="text-sm text-neutral-600 max-w-md mx-auto leading-relaxed">
@@ -543,7 +547,7 @@ export default function CheckoutPage() {
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
             <Link
-              href={`/track?orderId=${placedOrderId}`}
+              href={`/track?orderId=${encodeURIComponent(trackingCode)}`}
               className="px-6 py-3.5 bg-black text-white text-sm font-semibold rounded-xl hover:bg-neutral-800 transition"
             >
               Track Order Status

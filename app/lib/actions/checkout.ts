@@ -7,6 +7,7 @@ import { uploadToCloudinary } from "@/app/lib/cloudinary";
 import { sendOrderNotificationToAdmin } from "@/app/lib/notifications";
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import crypto from "crypto";
 
 export type CreateOrderInput = {
   customerName: string;
@@ -26,6 +27,7 @@ export type CreateOrderInput = {
 export type CreateOrderResult = {
   success: boolean;
   orderId?: number;
+  orderCode?: string;
   error?: string;
 };
 
@@ -159,9 +161,26 @@ export async function createOrderAction(input: CreateOrderInput): Promise<Create
       }
     }
 
+    // Generate unique cryptographically secure BAZ-XXXX tracking code (e.g. BAZ-4829)
+    let orderCode = `BAZ-${crypto.randomInt(1000, 9999)}`;
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const candidate = `BAZ-${crypto.randomInt(1000, 9999)}`;
+      const existing = await db
+        .select({ id: orders.id })
+        .from(orders)
+        .where(eq(orders.orderCode, candidate))
+        .limit(1);
+
+      if (existing.length === 0) {
+        orderCode = candidate;
+        break;
+      }
+    }
+
     const inserted = await db
       .insert(orders)
       .values({
+        orderCode,
         customerName: input.customerName,
         customerEmail: input.customerEmail,
         phone: input.phone,
@@ -177,7 +196,7 @@ export async function createOrderAction(input: CreateOrderInput): Promise<Create
         discountAmount: (input.discountAmount || 0).toString(),
         items: input.items,
       })
-      .returning({ id: orders.id });
+      .returning({ id: orders.id, orderCode: orders.orderCode });
 
     // Deduct stock from inventory for purchased products
     if (input.items && input.items.length > 0) {
@@ -197,6 +216,7 @@ export async function createOrderAction(input: CreateOrderInput): Promise<Create
     }
 
     const orderId = inserted[0]?.id;
+    const finalOrderCode = inserted[0]?.orderCode || orderCode;
 
     // Broadcast instant Web Push notification to store admin devices
     if (orderId) {
@@ -217,6 +237,7 @@ export async function createOrderAction(input: CreateOrderInput): Promise<Create
     return {
       success: true,
       orderId,
+      orderCode: finalOrderCode,
     };
   } catch (error) {
     console.error("Error creating order:", error);

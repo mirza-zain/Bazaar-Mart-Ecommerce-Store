@@ -168,6 +168,7 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
       query === "" ||
       formattedId.includes(query) ||
       o.id.toString() === query ||
+      (o.orderCode && o.orderCode.toLowerCase().includes(query)) ||
       o.customerName.toLowerCase().includes(query) ||
       o.customerEmail.toLowerCase().includes(query) ||
       (o.phone && o.phone.toLowerCase().includes(query)) ||
@@ -400,7 +401,7 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
 
                   return (
                     <tr key={o.id} className="hover:bg-neutral-50/70 transition">
-                      {/* Order ID & Date */}
+                      {/* Order ID & Tracking Code & Date */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-1.5">
                           <button
@@ -413,16 +414,23 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
                           <button
                             type="button"
                             onClick={() => {
-                              const code = `#ORD-${o.id.toString().padStart(4, "0")}`;
+                              const code = o.orderCode || `#ORD-${o.id.toString().padStart(4, "0")}`;
                               navigator.clipboard.writeText(code);
                               showToast(`Copied ${code} to clipboard`);
                             }}
                             className="p-1 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-md transition cursor-pointer"
-                            title="Copy Order ID"
+                            title="Copy Order Tracking Code"
                           >
                             <Copy className="w-3 h-3" />
                           </button>
                         </div>
+                        {o.orderCode && (
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-700 border border-neutral-200">
+                              {o.orderCode}
+                            </span>
+                          </div>
+                        )}
                         <p className="text-xs text-neutral-400 mt-0.5">{dateStr}</p>
                       </td>
 
@@ -682,6 +690,9 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
                 </div>
                 <div className="text-right">
                   <p className="font-mono font-bold text-lg">#ORD-{selectedDetailsOrder.id.toString().padStart(4, "0")}</p>
+                  {selectedDetailsOrder.orderCode && (
+                    <p className="font-mono text-xs font-bold text-neutral-800">Tracking Code: {selectedDetailsOrder.orderCode}</p>
+                  )}
                   <p className="text-xs text-neutral-500">
                     {selectedDetailsOrder.createdAt ? new Date(selectedDetailsOrder.createdAt).toLocaleDateString("en-PK", { dateStyle: "long" }) : ""}
                   </p>
@@ -697,15 +708,20 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
                   <h3 className="text-2xl font-bold text-neutral-900 font-mono">
                     #ORD-{selectedDetailsOrder.id.toString().padStart(4, "0")}
                   </h3>
+                  {selectedDetailsOrder.orderCode && (
+                    <span className="px-2 py-0.5 text-xs font-mono font-bold bg-neutral-100 text-neutral-800 border border-neutral-300 rounded-md">
+                      {selectedDetailsOrder.orderCode}
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={() => {
-                      const code = `#ORD-${selectedDetailsOrder.id.toString().padStart(4, "0")}`;
+                      const code = selectedDetailsOrder.orderCode || `#ORD-${selectedDetailsOrder.id.toString().padStart(4, "0")}`;
                       navigator.clipboard.writeText(code);
                       showToast(`Copied ${code} to clipboard`);
                     }}
                     className="p-1 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-md transition cursor-pointer"
-                    title="Copy Order ID"
+                    title="Copy Tracking Code"
                   >
                     <Copy className="w-4 h-4" />
                   </button>
