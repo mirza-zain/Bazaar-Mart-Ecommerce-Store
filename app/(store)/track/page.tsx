@@ -398,7 +398,9 @@ function TrackOrderContent() {
                     <div className="text-xs text-neutral-600 space-y-1">
                       <p className="font-semibold text-neutral-900">{order.customerName}</p>
                       <p>{order.address}</p>
-                      <p className="font-medium text-neutral-800">{order.city}, Pakistan</p>
+                      <p className="font-medium text-neutral-800">
+                        {order.city}{order.country ? `, ${order.country}` : ", Pakistan"}
+                      </p>
                       {order.phone && <p className="font-mono text-neutral-500 mt-1">Phone: {order.phone}</p>}
                       <p className="text-neutral-500">Email: {order.customerEmail}</p>
                     </div>

@@ -171,7 +171,8 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
       o.customerName.toLowerCase().includes(query) ||
       o.customerEmail.toLowerCase().includes(query) ||
       (o.phone && o.phone.toLowerCase().includes(query)) ||
-      (o.city && o.city.toLowerCase().includes(query));
+      (o.city && o.city.toLowerCase().includes(query)) ||
+      (o.country && o.country.toLowerCase().includes(query));
 
     const matchesStatus =
       statusFilter === "all" ||
@@ -331,7 +332,7 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by Order #, customer name, email, phone, or city..."
+              placeholder="Search by Order #, customer name, email, phone, city, or country..."
               className="w-full pl-9 pr-3 py-2 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black transition"
             />
           </div>
@@ -437,9 +438,12 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
                             <a href={`tel:${o.phone}`} className="hover:underline">{o.phone}</a>
                           </div>
                         )}
-                        {o.city && (
-                          <p className="text-xs text-neutral-400 truncate max-w-[220px] mt-0.5" title={o.address ? `${o.address}, ${o.city}` : o.city}>
-                            📍 {o.city}
+                        {(o.city || o.country) && (
+                          <p
+                            className="text-xs text-neutral-400 truncate max-w-[220px] mt-0.5"
+                            title={o.address ? `${o.address}, ${[o.city, o.country].filter(Boolean).join(", ")}` : [o.city, o.country].filter(Boolean).join(", ")}
+                          >
+                            📍 {[o.city, o.country].filter(Boolean).join(", ")}
                           </p>
                         )}
                       </td>
@@ -743,7 +747,9 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
 
               <div className="space-y-1">
                 <span className="font-semibold text-neutral-500 uppercase tracking-wider block">Shipping Address</span>
-                <p className="font-semibold text-neutral-900">{selectedDetailsOrder.city || "Pakistan"}</p>
+                <p className="font-semibold text-neutral-900">
+                  {[selectedDetailsOrder.city, selectedDetailsOrder.country].filter(Boolean).join(", ") || "Pakistan"}
+                </p>
                 <p className="text-neutral-600">{selectedDetailsOrder.address || "Standard Delivery"}</p>
               </div>
             </div>

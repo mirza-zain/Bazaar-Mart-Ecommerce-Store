@@ -45,6 +45,7 @@ export async function ensureTablesExist() {
         phone TEXT,
         address TEXT,
         city TEXT,
+        country TEXT DEFAULT 'Pakistan',
         total_amount NUMERIC NOT NULL,
         status TEXT NOT NULL DEFAULT 'Pending',
         payment_method TEXT NOT NULL DEFAULT 'cod',
@@ -55,6 +56,10 @@ export async function ensureTablesExist() {
         items JSONB NOT NULL DEFAULT '[]'::jsonb,
         created_at TIMESTAMP DEFAULT NOW()
       );
+    `);
+
+    await db.execute(sql`
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'Pakistan';
     `);
 
     await db.execute(sql`

@@ -52,6 +52,26 @@ const COUNTRY_CODES = [
   { code: "+91", country: "IN", flag: "🇮🇳", label: "India (+91)" },
 ];
 
+const COUNTRIES_LIST = [
+  { code: "PK", name: "Pakistan", flag: "🇵🇰", dialCode: "+92" },
+  { code: "US", name: "United States", flag: "🇺🇸", dialCode: "+1" },
+  { code: "GB", name: "United Kingdom", flag: "🇬🇧", dialCode: "+44" },
+  { code: "AE", name: "United Arab Emirates", flag: "🇦🇪", dialCode: "+971" },
+  { code: "SA", name: "Saudi Arabia", flag: "🇸🇦", dialCode: "+966" },
+  { code: "CA", name: "Canada", flag: "🇨🇦", dialCode: "+1" },
+  { code: "AU", name: "Australia", flag: "🇦🇺", dialCode: "+61" },
+  { code: "OM", name: "Oman", flag: "🇴🇲", dialCode: "+968" },
+  { code: "QA", name: "Qatar", flag: "🇶🇦", dialCode: "+974" },
+  { code: "KW", name: "Kuwait", flag: "🇰🇼", dialCode: "+965" },
+  { code: "BH", name: "Bahrain", flag: "🇧🇭", dialCode: "+973" },
+  { code: "DE", name: "Germany", flag: "🇩🇪", dialCode: "+49" },
+  { code: "TR", name: "Turkey", flag: "🇹🇷", dialCode: "+90" },
+  { code: "MY", name: "Malaysia", flag: "🇲🇾", dialCode: "+60" },
+  { code: "CN", name: "China", flag: "🇨🇳", dialCode: "+86" },
+  { code: "IN", name: "India", flag: "🇮🇳", dialCode: "+91" },
+  { code: "Other", name: "Other Country", flag: "🌐", dialCode: "" },
+];
+
 export default function CheckoutPage() {
   const { items, clearCart, isLoaded } = useCart();
 
@@ -62,12 +82,30 @@ export default function CheckoutPage() {
     phone: "",
     address: "",
     city: "Karachi",
+    country: "Pakistan",
     postalCode: "",
     notes: "",
   });
 
   const [countryCode, setCountryCode] = useState("+92");
   const [customCity, setCustomCity] = useState("");
+  const [customCountry, setCustomCountry] = useState("");
+
+  const handleCountryChange = (selectedCountry: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      country: selectedCountry,
+      // If switching to an international country, clear default Karachi selection
+      city: selectedCountry === "Pakistan" ? "Karachi" : "",
+    }));
+    const match = COUNTRIES_LIST.find((c) => c.name === selectedCountry);
+    if (match && match.dialCode) {
+      setCountryCode(match.dialCode);
+    }
+    if (selectedCountry !== "Pakistan" && paymentMethod === "cod") {
+      setPaymentMethod("bank_transfer");
+    }
+  };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Strictly accept only numbers (0-9) and prevent exceeding 11 digits
@@ -213,7 +251,19 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (formData.city === "Other" && !customCity.trim()) {
+    const effectiveCountry = formData.country === "Other Country" ? (customCountry.trim() || "Other") : formData.country;
+
+    if (formData.country === "Other Country" && !customCountry.trim()) {
+      setErrorMessage("Please enter your country name.");
+      return;
+    }
+
+    if (!effectiveCity.trim()) {
+      setErrorMessage("Please enter your city name.");
+      return;
+    }
+
+    if (formData.country === "Pakistan" && formData.city === "Other" && !customCity.trim()) {
       setErrorMessage("Please enter the name of your city or town.");
       return;
     }
@@ -223,8 +273,8 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (paymentMethod === "cod" && effectiveCity.toLowerCase() !== "karachi") {
-      setErrorMessage("Cash on Delivery (COD) is currently only available for deliveries within Karachi. Please select Bank Transfer.");
+    if (paymentMethod === "cod" && (effectiveCountry.toLowerCase() !== "pakistan" || effectiveCity.toLowerCase() !== "karachi")) {
+      setErrorMessage("Cash on Delivery (COD) is currently only available for deliveries within Karachi, Pakistan. Please select Bank Transfer.");
       return;
     }
 
@@ -238,6 +288,7 @@ export default function CheckoutPage() {
         phone: formattedPhone,
         address: trimmedAddress,
         city: effectiveCity,
+        country: effectiveCountry,
         totalAmount: grandTotal,
         paymentMethod,
         paymentProof: paymentProof || undefined,
@@ -515,6 +566,46 @@ export default function CheckoutPage() {
               </span>
             </div>
 
+            {/* Country / Region Selector */}
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1.5">
+                Country / Region <span className="text-rose-500 font-bold">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  required
+                  value={formData.country}
+                  onChange={(e) => handleCountryChange(e.target.value)}
+                  className="w-full pl-4 pr-9 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black focus:ring-1 focus:ring-black transition appearance-none cursor-pointer font-medium text-neutral-900"
+                >
+                  {COUNTRIES_LIST.map((c) => (
+                    <option key={c.code} value={c.name}>
+                      {c.flag} {c.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-neutral-400">
+                  <ChevronDown className="w-4 h-4" />
+                </div>
+              </div>
+
+              {formData.country === "Other Country" && (
+                <div className="mt-2.5">
+                  <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">
+                    Country Name <span className="text-rose-500 font-bold">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={customCountry}
+                    onChange={(e) => setCustomCountry(e.target.value)}
+                    placeholder="Type your country name (e.g. France, Singapore, Japan)..."
+                    className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black focus:ring-1 focus:ring-black transition"
+                  />
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1.5">
@@ -567,46 +658,65 @@ export default function CheckoutPage() {
                 <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1.5">
                   City <span className="text-rose-500 font-bold">*</span>
                 </label>
-                <div className="relative">
-                  <select
-                    required
-                    value={formData.city}
-                    onChange={(e) => {
-                      const newCity = e.target.value;
-                      setFormData((prev) => ({ ...prev, city: newCity }));
-                      if (newCity.toLowerCase() !== "karachi" && paymentMethod === "cod") {
-                        setPaymentMethod("bank_transfer");
-                      }
-                    }}
-                    className="w-full pl-4 pr-9 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black focus:ring-1 focus:ring-black transition appearance-none cursor-pointer"
-                  >
-                    <option value="Karachi">Karachi</option>
-                    <option value="Lahore">Lahore</option>
-                    <option value="Islamabad">Islamabad</option>
-                    <option value="Rawalpindi">Rawalpindi</option>
-                    <option value="Faisalabad">Faisalabad</option>
-                    <option value="Multan">Multan</option>
-                    <option value="Peshawar">Peshawar</option>
-                    <option value="Quetta">Quetta</option>
-                    <option value="Other">Other City / Town</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-neutral-400">
-                    <ChevronDown className="w-4 h-4" />
-                  </div>
-                </div>
+                {formData.country === "Pakistan" ? (
+                  <>
+                    <div className="relative">
+                      <select
+                        required
+                        value={formData.city}
+                        onChange={(e) => {
+                          const newCity = e.target.value;
+                          setFormData((prev) => ({ ...prev, city: newCity }));
+                          if (newCity.toLowerCase() !== "karachi" && paymentMethod === "cod") {
+                            setPaymentMethod("bank_transfer");
+                          }
+                        }}
+                        className="w-full pl-4 pr-9 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black focus:ring-1 focus:ring-black transition appearance-none cursor-pointer"
+                      >
+                        <option value="Karachi">Karachi</option>
+                        <option value="Lahore">Lahore</option>
+                        <option value="Islamabad">Islamabad</option>
+                        <option value="Rawalpindi">Rawalpindi</option>
+                        <option value="Faisalabad">Faisalabad</option>
+                        <option value="Multan">Multan</option>
+                        <option value="Peshawar">Peshawar</option>
+                        <option value="Quetta">Quetta</option>
+                        <option value="Other">Other City / Town</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-neutral-400">
+                        <ChevronDown className="w-4 h-4" />
+                      </div>
+                    </div>
 
-                {formData.city === "Other" && (
-                  <div className="mt-2.5">
-                    <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">
-                      City / Town Name <span className="text-rose-500 font-bold">*</span>
-                    </label>
+                    {formData.city === "Other" && (
+                      <div className="mt-2.5">
+                        <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">
+                          City / Town Name <span className="text-rose-500 font-bold">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={customCity}
+                          onChange={(e) => setCustomCity(e.target.value)}
+                          placeholder="Type your city or town name (e.g. Sialkot, Hyderabad, Abbottabad)..."
+                          className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black focus:ring-1 focus:ring-black transition"
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div>
                     <input
                       type="text"
                       required
-                      value={customCity}
-                      onChange={(e) => setCustomCity(e.target.value)}
-                      placeholder="Type your city or town name (e.g. Sialkot, Hyderabad, Abbottabad)..."
-                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black focus:ring-1 focus:ring-black transition"
+                      value={formData.city === "Karachi" ? "" : formData.city}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData((prev) => ({ ...prev, city: val }));
+                        setCustomCity(val);
+                      }}
+                      placeholder="e.g. London, Dubai, New York, Riyadh"
+                      className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black focus:ring-1 focus:ring-black transition"
                     />
                   </div>
                 )}
@@ -649,19 +759,26 @@ export default function CheckoutPage() {
               </span>
             </div>
 
-            {/* City COD Notice if not Karachi */}
-            {formData.city.toLowerCase() !== "karachi" && (
+            {/* Payment Method Notice */}
+            {formData.country !== "Pakistan" ? (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-2.5 text-xs text-amber-800">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>
+                  <strong>International Shipping Note:</strong> Cash on Delivery (COD) is strictly available within Karachi, Pakistan. For international delivery to <strong>{formData.country === "Other" ? (customCountry || "selected country") : formData.country}</strong>, please complete payment via Direct Bank Transfer.
+                </span>
+              </div>
+            ) : formData.city.toLowerCase() !== "karachi" ? (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-2.5 text-xs text-amber-800">
                 <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <span>
                   <strong>Note:</strong> Cash on Delivery (COD) is exclusively available for deliveries within <strong>Karachi</strong>. For shipments to <strong>{formData.city}</strong>, please complete payment via Direct Bank Transfer or EasyPaisa.
                 </span>
               </div>
-            )}
+            ) : null}
 
             <div className="space-y-3">
               {/* COD Option */}
-              {formData.city.toLowerCase() === "karachi" ? (
+              {formData.country === "Pakistan" && formData.city.toLowerCase() === "karachi" ? (
                 <label
                   className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition ${
                     paymentMethod === "cod"
@@ -711,7 +828,9 @@ export default function CheckoutPage() {
                         </span>
                       </div>
                       <span className="text-xs text-neutral-400">
-                        Only available for addresses in Karachi
+                        {formData.country !== "Pakistan"
+                          ? "Unavailable for international shipping (Karachi, Pakistan only)"
+                          : "Only available for addresses in Karachi"}
                       </span>
                     </div>
                   </div>

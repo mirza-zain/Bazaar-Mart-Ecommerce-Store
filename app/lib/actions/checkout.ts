@@ -14,6 +14,7 @@ export type CreateOrderInput = {
   phone: string;
   address: string;
   city: string;
+  country?: string;
   totalAmount: number;
   items: OrderItem[];
   paymentMethod: "cod" | "bank_transfer";
@@ -129,10 +130,15 @@ export async function createOrderAction(input: CreateOrderInput): Promise<Create
       return { success: false, error: "Invalid order total amount." };
     }
 
-    if (input.paymentMethod === "cod" && input.city.trim().toLowerCase() !== "karachi") {
+    const resolvedCountry = input.country?.trim() || "Pakistan";
+
+    if (
+      input.paymentMethod === "cod" &&
+      (resolvedCountry.toLowerCase() !== "pakistan" || input.city.trim().toLowerCase() !== "karachi")
+    ) {
       return {
         success: false,
-        error: "Cash on Delivery is currently only available for deliveries within Karachi. Please select Bank Transfer.",
+        error: "Cash on Delivery is currently only available for deliveries within Karachi, Pakistan. Please select Bank Transfer.",
       };
     }
 
@@ -161,6 +167,7 @@ export async function createOrderAction(input: CreateOrderInput): Promise<Create
         phone: input.phone,
         address: input.address,
         city: input.city,
+        country: input.country?.trim() || "Pakistan",
         totalAmount: input.totalAmount.toString(),
         status: "Pending",
         paymentMethod: input.paymentMethod,

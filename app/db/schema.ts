@@ -34,6 +34,7 @@ export const orders = pgTable("orders", {
   phone: text("phone"),
   address: text("address"),
   city: text("city"),
+  country: text("country").default("Pakistan"),
   totalAmount: numeric("total_amount").notNull(),
   status: text("status").notNull().default("Pending"), // 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled'
   paymentMethod: text("payment_method").notNull().default("cod"), // 'cod' | 'bank_transfer'
