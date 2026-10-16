@@ -5,9 +5,21 @@ import { Suspense } from "react";
 export default function FeaturedItems() {
   return (
     <div className="w-full px-5 md:px-16 py-16 mt-10">
-      <div className="w-full flex md:flex-row flex-col md:justify-between md:items-center gap-2 md:gap-5">
-        <h2 className="text-4xl md:text-5xl font-medium uppercase">Explore items</h2>
-        <Link href={'/products'} className="w-full md:w-auto text-right underline text-lg text-blue-800 cursor-pointer">Show All</Link>
+      <div className="w-full flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold uppercase tracking-tight text-neutral-900">
+            Featured Drops
+          </h2>
+          <p className="text-xs sm:text-sm text-neutral-500 mt-1">
+            Hand-picked pieces from our newest collection
+          </p>
+        </div>
+        <Link
+          href="/products"
+          className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-black hover:text-neutral-600 underline underline-offset-4 cursor-pointer shrink-0"
+        >
+          View All
+        </Link>
       </div>
       <Suspense fallback={
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-8">

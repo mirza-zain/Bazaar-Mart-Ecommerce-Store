@@ -153,7 +153,7 @@ export default function Footer() {
       <div className="border-t border-neutral-800 py-6 px-6 md:px-12 text-xs text-neutral-400">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <p>© 2026 Bazaario. All rights reserved.</p>
-          <div className="flex items-center gap-3 text-neutral-300 font-medium">
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-3 text-neutral-300 font-medium">
             <span>Cash on Delivery</span>
             <span>•</span>
             <span>Visa</span>

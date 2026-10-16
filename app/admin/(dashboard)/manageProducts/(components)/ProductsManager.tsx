@@ -64,7 +64,7 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
   const [formPrice, setFormPrice] = useState("");
   const [formStock, setFormStock] = useState("");
   const [formDescription, setFormDescription] = useState("");
-  const [formImage, setFormImage] = useState("/images/img1.jpg");
+  const [formImage, setFormImage] = useState("");
   const [formImagePreview, setFormImagePreview] = useState<string | null>(null);
   const [formSelectedFile, setFormSelectedFile] = useState<File | null>(null);
 
@@ -88,7 +88,7 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
     setFormPrice("");
     setFormStock("20");
     setFormDescription("");
-    setFormImage("/images/img1.jpg");
+    setFormImage("");
     setFormImagePreview(null);
     setFormSelectedFile(null);
     setIsAddModalOpen(true);
@@ -104,8 +104,8 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
     setFormPrice(product.price.toString());
     setFormStock(product.stock.toString());
     setFormDescription(product.description || "");
-    setFormImage(product.image || "/images/img1.jpg");
-    setFormImagePreview(product.image || "/images/img1.jpg");
+    setFormImage(product.image || "");
+    setFormImagePreview(product.image || null);
     setFormSelectedFile(null);
     setIsAddModalOpen(true);
   };
@@ -334,7 +334,7 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
       {/* Filters and Table Container */}
       <div className="bg-white rounded-2xl border border-neutral-200 p-4 sm:p-5 shadow-xs space-y-4">
         {/* Controls */}
-        <div className="flex flex-col sm:flex-row items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
           <div className="relative flex-1 w-full">
             <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -346,11 +346,11 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="py-2 px-3 text-xs bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-700 focus:outline-hidden focus:border-black flex-1 sm:flex-initial cursor-pointer"
+              className="py-2 px-3 text-xs bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-700 focus:outline-hidden focus:border-black cursor-pointer truncate"
             >
               <option value="all">All Categories</option>
               {existingCategories.map((cat) => (
@@ -363,7 +363,7 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
             <select
               value={stockFilter}
               onChange={(e) => setStockFilter(e.target.value)}
-              className="py-2 px-3 text-xs bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-700 focus:outline-hidden focus:border-black flex-1 sm:flex-initial"
+              className="py-2 px-3 text-xs bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-700 focus:outline-hidden focus:border-black cursor-pointer truncate"
             >
               <option value="all">All Stock Levels</option>
               <option value="in_stock">In Stock (&gt;0)</option>
@@ -378,16 +378,146 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                   setCategoryFilter("all");
                   setStockFilter("all");
                 }}
-                className="px-3 py-2 text-xs text-neutral-500 hover:text-black font-semibold whitespace-nowrap cursor-pointer"
+                className="col-span-2 sm:col-span-1 px-3 py-2 text-xs text-neutral-600 hover:text-black font-semibold whitespace-nowrap cursor-pointer text-center bg-neutral-100 sm:bg-transparent rounded-xl"
               >
-                Reset
+                Reset Filters
               </button>
             )}
           </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto rounded-xl border border-neutral-100">
+        {/* Mobile Product Cards (Finger-Friendly for Phones) */}
+        <div className="block md:hidden space-y-3">
+          {filteredProducts.length === 0 ? (
+            <div className="py-12 text-center text-neutral-500 bg-neutral-50 rounded-2xl border border-neutral-100 p-6">
+              <Package className="w-10 h-10 mx-auto text-neutral-300 mb-2" />
+              <p className="font-medium text-neutral-700 text-sm">No products found.</p>
+              <button
+                onClick={handleOpenAddModal}
+                className="mt-2 text-xs font-semibold text-black underline cursor-pointer"
+              >
+                + Add a new product
+              </button>
+            </div>
+          ) : (
+            filteredProducts.map((p) => {
+              const stockNum = Number(p.stock) || 0;
+              const isOutOfStock = stockNum <= 0;
+              const isLowStock = stockNum > 0 && stockNum < 10;
+
+              return (
+                <div
+                  key={p.id}
+                  className="bg-neutral-50/70 border border-neutral-200/80 rounded-2xl p-3.5 space-y-3 shadow-xs"
+                >
+                  {/* Top: Image, Title, Category & Price */}
+                  <div className="flex items-start gap-3">
+                    <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-white shrink-0 border border-neutral-200">
+                      <Image
+                        src={p.image || "/images/img1.jpg"}
+                        alt={p.name}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-neutral-200/80 text-neutral-800">
+                          {p.category}
+                        </span>
+                        <span className="font-bold text-sm text-neutral-900">
+                          PKR {Number(p.price).toLocaleString()}
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-sm text-neutral-900 line-clamp-1 mt-1">
+                        {p.name}
+                      </h4>
+                      <p className="text-xs text-neutral-400">
+                        {p.subCategory || "General"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Bottom: Stock stepper & Edit/Delete actions */}
+                  <div className="flex items-center justify-between pt-2 border-t border-neutral-200/60">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                          isOutOfStock
+                            ? "bg-rose-100 text-rose-800"
+                            : isLowStock
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-emerald-100 text-emerald-800"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            isOutOfStock
+                              ? "bg-rose-600"
+                              : isLowStock
+                              ? "bg-amber-600"
+                              : "bg-emerald-600"
+                          }`}
+                        />
+                        {stockNum} left
+                      </span>
+
+                      {/* Quick Adjust Stepper */}
+                      <div className="flex items-center border border-neutral-200 rounded-lg overflow-hidden bg-white">
+                        <button
+                          onClick={() => handleAdjustStock(p, -1)}
+                          disabled={isPending || stockNum <= 0}
+                          className="p-1 hover:bg-neutral-100 text-neutral-600 disabled:opacity-30 transition cursor-pointer"
+                          title="Decrease stock by 1"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => handleAdjustStock(p, 5)}
+                          disabled={isPending}
+                          className="px-1.5 py-0.5 hover:bg-neutral-100 text-[10px] font-bold text-neutral-700 transition cursor-pointer border-l border-r border-neutral-200"
+                          title="Restock +5"
+                        >
+                          +5
+                        </button>
+                        <button
+                          onClick={() => handleAdjustStock(p, 1)}
+                          disabled={isPending}
+                          className="p-1 hover:bg-neutral-100 text-neutral-600 transition cursor-pointer"
+                          title="Increase stock by 1"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleOpenEditModal(p)}
+                        className="p-2 text-neutral-600 hover:text-black hover:bg-neutral-200/60 rounded-xl transition cursor-pointer"
+                        title="Edit Product"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProduct(p.id, p.name)}
+                        disabled={isPending}
+                        className="p-2 text-neutral-400 hover:text-rose-600 hover:bg-rose-100/60 rounded-xl transition cursor-pointer"
+                        title="Delete Product"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto rounded-xl border border-neutral-100">
           <table className="w-full text-left text-sm">
             <thead className="bg-neutral-50 text-neutral-500 font-semibold border-b border-neutral-200 uppercase text-[11px] tracking-wider">
               <tr>
@@ -538,29 +668,29 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
 
       {/* Add / Edit Product Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-neutral-200 max-h-[92vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-xl w-full p-4 sm:p-6 shadow-2xl border border-neutral-200 max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-neutral-100">
               <div>
-                <h3 className="text-xl font-bold text-neutral-900">
+                <h3 className="text-lg sm:text-xl font-bold text-neutral-900">
                   {editingProduct ? "Edit Product" : "Add New Product"}
                 </h3>
                 <p className="text-xs text-neutral-400 mt-0.5">
                   {editingProduct
                     ? `Editing ${editingProduct.name} (#${editingProduct.id})`
-                    : "Fill in the details to publish a new piece to your store catalog."}
+                    : "Fill in details to add a new product to your catalog."}
                 </p>
               </div>
 
               <button
                 onClick={() => setIsAddModalOpen(false)}
-                className="p-2 text-neutral-400 hover:text-neutral-900 rounded-xl transition cursor-pointer"
+                className="p-1.5 sm:p-2 text-neutral-400 hover:text-neutral-900 rounded-xl transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmitForm} className="space-y-4 mt-4">
+            <form onSubmit={handleSubmitForm} className="space-y-3.5 sm:space-y-4 mt-3 sm:mt-4">
               <div>
                 <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
                   Product Title *
@@ -575,7 +705,7 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-semibold uppercase text-neutral-700">
@@ -615,12 +745,12 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                           setCustomNewCategory(e.target.value);
                           setFormCategory(e.target.value);
                         }}
-                        placeholder="Type new category (e.g. Footwear, Hoodies)..."
+                        placeholder="Type new category..."
                         className="w-full px-3.5 py-2.5 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black font-medium"
                         autoFocus
                       />
                       <p className="text-[10px] text-neutral-400">
-                        Will be created and available storewide
+                        Will be created storewide
                       </p>
                     </div>
                   ) : (
@@ -661,7 +791,7 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
                     Price (PKR) *
@@ -693,15 +823,15 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                 </div>
               </div>
 
-              {/* Cloudinary Image Picker */}
+              {/* Product Image Section */}
               <div>
                 <label className="block text-xs font-semibold uppercase text-neutral-700 mb-1">
-                  Product Image (Cloudinary Upload)
+                  Product Image
                 </label>
 
                 {formImagePreview ? (
-                  <div className="relative mb-3 flex items-center gap-3 p-3 bg-neutral-50 rounded-2xl border border-neutral-200">
-                    <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-white shrink-0 border border-neutral-200">
+                  <div className="relative mb-2.5 flex items-center gap-3 p-3 bg-neutral-50 rounded-2xl border border-neutral-200">
+                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-white shrink-0 border border-neutral-200">
                       <Image
                         src={formImagePreview}
                         alt="Preview"
@@ -712,10 +842,10 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                     </div>
                     <div className="flex-1 min-w-0 text-xs">
                       <p className="font-semibold text-neutral-900 truncate">
-                        {formSelectedFile ? formSelectedFile.name : "Current Product Image"}
+                        {formSelectedFile ? formSelectedFile.name : "Product Image Selected"}
                       </p>
                       <p className="text-[11px] text-emerald-600 font-medium mt-0.5">
-                        {formSelectedFile ? "Ready to upload to Cloudinary" : "Stored image"}
+                        {formSelectedFile ? "Ready to upload" : "Current image"}
                       </p>
                     </div>
                     <button
@@ -723,10 +853,10 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                       onClick={() => {
                         setFormSelectedFile(null);
                         setFormImagePreview(null);
-                        setFormImage("/images/img1.jpg");
+                        setFormImage("");
                       }}
                       className="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-200 rounded-lg transition"
-                      title="Clear image"
+                      title="Remove image"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -736,7 +866,7 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                 <div className="flex gap-2">
                   <label className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-xs font-semibold text-neutral-800 bg-neutral-100 hover:bg-neutral-200 rounded-2xl cursor-pointer transition border border-dashed border-neutral-300">
                     <Upload className="w-4 h-4 text-neutral-600" />
-                    <span>Choose Image from Device (Cloudinary)</span>
+                    <span>Upload Image from Device</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -755,8 +885,8 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                       setFormImagePreview(e.target.value);
                       setFormSelectedFile(null);
                     }}
-                    placeholder="Or enter direct image URL / Cloudinary URL"
-                    className="w-full px-3 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:border-black"
+                    placeholder="Or enter direct image URL"
+                    className="w-full px-3 py-2 text-xs bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:border-black"
                   />
                 </div>
               </div>
@@ -770,24 +900,24 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                   rows={3}
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
-                  placeholder="Detail fabric composition, silhouette, care instructions, and sizing notes..."
+                  placeholder="Describe materials, fit, care instructions..."
                   className="w-full px-3.5 py-2 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-black/10 focus:border-black"
                 />
               </div>
 
               {/* Footer Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-neutral-100">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-3 border-t border-neutral-100">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-neutral-600 hover:text-neutral-900 rounded-xl transition cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2.5 text-xs font-semibold text-neutral-600 hover:text-neutral-900 rounded-xl transition cursor-pointer text-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="px-6 py-2.5 text-xs font-semibold bg-black hover:bg-neutral-800 text-white rounded-xl shadow-xs transition cursor-pointer"
+                  className="w-full sm:w-auto px-6 py-2.5 text-xs font-semibold bg-black hover:bg-neutral-800 text-white rounded-xl shadow-xs transition cursor-pointer text-center disabled:opacity-50"
                 >
                   {isPending ? "Saving..." : editingProduct ? "Save Changes" : "Publish Product"}
                 </button>

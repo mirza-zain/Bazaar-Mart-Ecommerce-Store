@@ -10,8 +10,11 @@ import { auth } from "@/app/lib/auth";
 import { isCanonicalAdmin } from "@/app/lib/security";
 import { uploadToCloudinary, uploadFileAction } from "@/app/lib/cloudinary";
 
+let tablesEnsured = false;
+
 // Ensure tables exist on Neon if migrations haven't run yet
 export async function ensureTablesExist() {
+  if (tablesEnsured) return;
   try {
     await connection();
   } catch {}
@@ -196,6 +199,7 @@ export async function ensureTablesExist() {
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);
+    tablesEnsured = true;
   } catch (error) {
     console.error("Error creating tables:", error);
   }
@@ -276,7 +280,7 @@ export async function addProductAction(formData: FormData) {
     
     // Cloudinary image upload handling
     const imageInput = (formData.get("image") as string) || "";
-    let finalImageUrl = imageInput.trim() || "/images/img1.jpg";
+    let finalImageUrl = imageInput.trim();
 
     const imageFile = formData.get("imageFile") as File | null;
     if (imageFile && typeof imageFile !== "string" && imageFile.size > 0) {

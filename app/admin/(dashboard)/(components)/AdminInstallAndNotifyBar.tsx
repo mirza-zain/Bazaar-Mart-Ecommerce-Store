@@ -248,10 +248,10 @@ export default function AdminInstallAndNotifyBar() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full md:w-auto">
             {/* Install On Phone Button */}
             {isInstalled ? (
-              <div className="flex items-center gap-2 px-3.5 py-2 bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 rounded-xl text-xs font-semibold">
+              <div className="flex items-center justify-center gap-2 px-3.5 py-2.5 bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 rounded-xl text-xs font-semibold w-full sm:w-auto">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 <span>App Installed</span>
               </div>
@@ -259,7 +259,7 @@ export default function AdminInstallAndNotifyBar() {
               <button
                 type="button"
                 onClick={handleInstallApp}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-neutral-100 text-black font-semibold rounded-xl text-xs shadow-md transition cursor-pointer active:scale-95"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white hover:bg-neutral-100 text-black font-semibold rounded-xl text-xs shadow-md transition cursor-pointer active:scale-95 w-full sm:w-auto"
               >
                 <Smartphone className="w-4 h-4 text-neutral-800" />
                 <span>Install on Phone</span>
@@ -272,7 +272,7 @@ export default function AdminInstallAndNotifyBar() {
                 type="button"
                 onClick={handleEnableNotifications}
                 disabled={isNotifyLoading}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-semibold rounded-xl text-xs shadow-md shadow-amber-500/10 transition cursor-pointer disabled:opacity-50 active:scale-95"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-semibold rounded-xl text-xs shadow-md shadow-amber-500/10 transition cursor-pointer disabled:opacity-50 active:scale-95 w-full sm:w-auto"
               >
                 {isNotifyLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -282,8 +282,8 @@ export default function AdminInstallAndNotifyBar() {
                 <span>Enable Order Notifications</span>
               </button>
             ) : (
-              <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs font-semibold">
+              <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
+                <span className="flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs font-semibold flex-1 sm:flex-initial">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Notifications Active</span>
                 </span>
@@ -291,7 +291,7 @@ export default function AdminInstallAndNotifyBar() {
                   type="button"
                   onClick={handleSendTest}
                   disabled={isNotifyLoading}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-xs font-medium border border-zinc-700 transition cursor-pointer disabled:opacity-50"
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-xs font-medium border border-zinc-700 transition cursor-pointer disabled:opacity-50"
                   title="Send a test notification to verify delivery"
                 >
                   {isNotifyLoading ? (
