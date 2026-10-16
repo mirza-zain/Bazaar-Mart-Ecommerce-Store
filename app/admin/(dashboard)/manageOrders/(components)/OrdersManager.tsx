@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useTransition } from "react";
+import React, { useState, useEffect, useTransition, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -24,12 +24,14 @@ import {
   User,
   X,
   ExternalLink,
+  RotateCw,
 } from "lucide-react";
 import { Order } from "@/app/db/schema";
 import {
   updateOrderStatusAction,
   verifyPaymentAction,
   deleteOrderAction,
+  getAllOrdersAction,
 } from "@/app/lib/actions/admin";
 
 interface OrdersManagerProps {
@@ -49,15 +51,87 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
   const [selectedProofOrder, setSelectedProofOrder] = useState<Order | null>(null);
   const [selectedDetailsOrder, setSelectedDetailsOrder] = useState<Order | null>(null);
 
-  // Synchronize when server revalidates
-  useEffect(() => {
-    setOrdersList(initialOrders);
-  }, [initialOrders]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastSyncedTime, setLastSyncedTime] = useState<Date>(new Date());
 
   const showToast = (text: string, type: "success" | "error" = "success") => {
     setStatusMessage({ text, type });
     setTimeout(() => setStatusMessage(null), 3500);
   };
+
+  // Live auto-refresh from live database
+  const refreshOrders = useCallback(async (manual = false) => {
+    if (manual) setIsRefreshing(true);
+    try {
+      const freshOrders = await getAllOrdersAction();
+      if (Array.isArray(freshOrders)) {
+        setOrdersList((prev) => {
+          // Detect newly arrived order
+          if (prev.length > 0 && freshOrders.length > prev.length) {
+            const newest = freshOrders[0];
+            const newCode = newest?.orderCode || `#ORD-${newest?.id}`;
+            showToast(`🔔 New order arrived: ${newCode} from ${newest?.customerName}!`, "success");
+
+            // Pleasant notification chime via Web Audio API
+            try {
+              const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+              if (AudioCtx) {
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+                osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12); // A5
+                gain.gain.setValueAtTime(0.18, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.4);
+              }
+            } catch {}
+          }
+          return freshOrders;
+        });
+        setLastSyncedTime(new Date());
+        if (manual) {
+          showToast("Orders synchronized with live database", "success");
+        }
+      }
+    } catch (err) {
+      console.warn("Auto-sync error:", err);
+    } finally {
+      if (manual) setIsRefreshing(false);
+    }
+  }, []);
+
+  // Poll every 8s and trigger instant refresh on window focus
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        refreshOrders(false);
+      }
+    }, 8000);
+
+    const onVisibilityOrFocus = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        refreshOrders(false);
+      }
+    };
+
+    window.addEventListener("focus", onVisibilityOrFocus);
+    document.addEventListener("visibilitychange", onVisibilityOrFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", onVisibilityOrFocus);
+      document.removeEventListener("visibilitychange", onVisibilityOrFocus);
+    };
+  }, [refreshOrders]);
+
+  // Synchronize when server revalidates
+  useEffect(() => {
+    setOrdersList(initialOrders);
+  }, [initialOrders]);
 
   // Status updates
   const handleUpdateStatus = (orderId: number, newStatus: string) => {
@@ -281,48 +355,71 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
 
       {/* Filters and Search Bar */}
       <div className="bg-white rounded-2xl border border-neutral-200 p-4 sm:p-5 shadow-xs space-y-4">
-        {/* Quick Status Filter Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-          {[
-            { id: "all", label: "All Orders", count: ordersList.length },
-            { id: "Pending", label: "Pending", count: pendingOrdersCount },
-            { id: "Processing", label: "Processing", count: processingCount },
-            { id: "Shipped", label: "Shipped", count: ordersList.filter((o) => o.status === "Shipped").length },
-            { id: "Delivered", label: "Delivered", count: deliveredCount },
-            { id: "Cancelled", label: "Cancelled", count: ordersList.filter((o) => o.status === "Cancelled").length },
-            {
-              id: "needs_verification",
-              label: "Needs Proof Approval",
-              count: awaitingVerificationCount,
-              highlight: awaitingVerificationCount > 0,
-            },
-          ].map((tab) => {
-            const isActive = statusFilter === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setStatusFilter(tab.id)}
-                className={`px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
-                  isActive
-                    ? "bg-black text-white shadow-xs"
-                    : tab.highlight
-                    ? "bg-amber-100 text-amber-900 hover:bg-amber-200"
-                    : "bg-neutral-100 text-neutral-600 hover:text-black hover:bg-neutral-200"
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+        {/* Quick Status Filter Tabs & Live Auto-Sync Indicator */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-neutral-100">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+            {[
+              { id: "all", label: "All Orders", count: ordersList.length },
+              { id: "Pending", label: "Pending", count: pendingOrdersCount },
+              { id: "Processing", label: "Processing", count: processingCount },
+              { id: "Shipped", label: "Shipped", count: ordersList.filter((o) => o.status === "Shipped").length },
+              { id: "Delivered", label: "Delivered", count: deliveredCount },
+              { id: "Cancelled", label: "Cancelled", count: ordersList.filter((o) => o.status === "Cancelled").length },
+              {
+                id: "needs_verification",
+                label: "Needs Proof Approval",
+                count: awaitingVerificationCount,
+                highlight: awaitingVerificationCount > 0,
+              },
+            ].map((tab) => {
+              const isActive = statusFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setStatusFilter(tab.id)}
+                  className={`px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
                     isActive
-                      ? "bg-neutral-800 text-neutral-200"
-                      : "bg-neutral-200 text-neutral-700"
+                      ? "bg-black text-white shadow-xs"
+                      : tab.highlight
+                      ? "bg-amber-100 text-amber-900 hover:bg-amber-200"
+                      : "bg-neutral-100 text-neutral-600 hover:text-black hover:bg-neutral-200"
                   }`}
                 >
-                  {tab.count}
-                </span>
-              </button>
-            );
-          })}
+                  <span>{tab.label}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                      isActive
+                        ? "bg-neutral-800 text-neutral-200"
+                        : "bg-neutral-200 text-neutral-700"
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2 text-xs shrink-0 self-end sm:self-auto pt-1 sm:pt-0">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="font-semibold text-neutral-600">Auto-Sync</span>
+            <span className="text-neutral-300">•</span>
+            <span className="text-neutral-400 font-mono text-[11px]" suppressHydrationWarning>
+              {lastSyncedTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+            </span>
+            <button
+              type="button"
+              onClick={() => refreshOrders(true)}
+              disabled={isRefreshing}
+              className="p-1 hover:bg-neutral-100 rounded-md transition text-neutral-500 hover:text-black cursor-pointer"
+              title="Click to force refresh orders now"
+            >
+              <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-black" : ""}`} />
+            </button>
+          </div>
         </div>
 
         {/* Search & Secondary Filter Controls */}
@@ -643,29 +740,59 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
 
       {/* MODAL 1: Full Order Details & Invoice Modal */}
       {selectedDetailsOrder && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div id="order-details-modal-backdrop" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <style>{`
             @media print {
+              @page {
+                size: A4 portrait;
+                margin: 8mm 12mm;
+              }
+              html, body {
+                background: #ffffff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                height: auto !important;
+                min-height: 0 !important;
+                overflow: visible !important;
+              }
               body * {
                 visibility: hidden !important;
               }
               #printable-admin-invoice, #printable-admin-invoice * {
                 visibility: visible !important;
               }
-              #printable-admin-invoice {
-                position: fixed !important;
+              #order-details-modal-backdrop {
+                position: absolute !important;
                 left: 0 !important;
                 top: 0 !important;
                 width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: transparent !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                display: block !important;
+                inset: auto !important;
+              }
+              #printable-admin-invoice {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
                 height: auto !important;
                 max-height: none !important;
                 overflow: visible !important;
-                background: white !important;
-                color: black !important;
-                padding: 32px !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+                padding: 0 !important;
+                margin: 0 !important;
                 border: none !important;
                 box-shadow: none !important;
-                z-index: 9999999 !important;
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
               }
               .print\\:hidden {
                 display: none !important;
@@ -678,7 +805,7 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
 
           <div
             id="printable-admin-invoice"
-            className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-neutral-200 max-h-[92vh] overflow-y-auto space-y-6"
+            className="bg-white rounded-3xl max-w-2xl w-full p-6 print:p-0 shadow-2xl border border-neutral-200 max-h-[92vh] overflow-y-auto space-y-5 print:space-y-3"
           >
             {/* Printable Store Official Header (visible on paper/print) */}
             <div className="hidden print:block border-b-2 border-neutral-900 pb-4 mb-2">
@@ -881,7 +1008,7 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
 
             {/* Bank Transfer Receipt Link if exists */}
             {selectedDetailsOrder.paymentMethod === "bank_transfer" && (
-              <div className="p-3 bg-purple-50/60 border border-purple-100 rounded-2xl flex items-center justify-between text-xs">
+              <div className="p-3 bg-purple-50/60 border border-purple-100 rounded-2xl flex items-center justify-between text-xs print:hidden">
                 <div>
                   <span className="font-semibold text-purple-950 block">Bank Transfer Status:</span>
                   <span className="text-purple-700 font-medium">
@@ -902,7 +1029,7 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
             )}
 
             {/* Bottom Actions */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-neutral-100">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-neutral-100 print:hidden">
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <span className="text-xs font-semibold text-neutral-500">Status:</span>
                 <select
@@ -918,7 +1045,7 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
                 </select>
               </div>
 
-              <div className="flex items-center gap-2 print:hidden w-full sm:w-auto">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={() => window.print()}
@@ -938,10 +1065,10 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
             </div>
 
             {/* Official Print Footer */}
-            <div className="hidden print:block pt-6 border-t border-neutral-200 text-center text-xs text-neutral-500">
+            <div className="hidden print:block pt-3 border-t border-neutral-200 text-center text-xs text-neutral-500">
               <p className="font-semibold text-neutral-800">Thank you for shopping with BAZAARIO</p>
-              <p className="mt-0.5">Karachi, Pakistan • Helpline: +92 333 2244373 • www.bazaario.pk</p>
-              <p className="text-[10px] text-neutral-400 mt-2">This is a computer generated invoice and packing slip.</p>
+              <p className="mt-0.5 text-[11px]">Karachi, Pakistan • Helpline: +92 333 2244373 • www.bazaario.pk</p>
+              <p className="text-[10px] text-neutral-400 mt-1">This is a computer generated official invoice & packing slip.</p>
             </div>
           </div>
         </div>

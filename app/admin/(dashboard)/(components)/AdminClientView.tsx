@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useTransition, useMemo } from "react";
+import React, { useState, useEffect, useTransition, useMemo, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,6 +22,7 @@ import {
   X,
   AlertCircle,
   TrendingUp,
+  RotateCw,
 } from "lucide-react";
 import { Product, Order } from "@/app/db/schema";
 import {
@@ -31,6 +32,7 @@ import {
   verifyPaymentAction,
   updateProductStockAction,
   DashboardStats,
+  getDashboardData,
 } from "@/app/lib/actions/admin";
 import AdminInstallAndNotifyBar from "./AdminInstallAndNotifyBar";
 
@@ -48,6 +50,9 @@ export default function AdminClientView({
   const router = useRouter();
   const [ordersList, setOrdersList] = useState<Order[]>(orders);
   const [productsList, setProductsList] = useState<Product[]>(products);
+  const [statsData, setStatsData] = useState<DashboardStats>(stats);
+  const [lastSyncedTime, setLastSyncedTime] = useState<Date>(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"orders" | "products">("orders");
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -55,11 +60,87 @@ export default function AdminClientView({
   const [selectedProofOrder, setSelectedProofOrder] = useState<Order | null>(null);
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
+  // Live auto-refresh from live database
+  const refreshDashboard = useCallback(async (manual = false) => {
+    if (manual) setIsRefreshing(true);
+    try {
+      const data = await getDashboardData();
+      if (data && data.stats) {
+        setStatsData(data.stats);
+        setProductsList(data.recentProducts || []);
+        setOrdersList((prev) => {
+          if (prev.length > 0 && data.recentOrders.length > prev.length) {
+            const newest = data.recentOrders[0];
+            const newCode = newest?.orderCode || `#ORD-${newest?.id}`;
+            setStatusMessage({
+              text: `🔔 New order arrived: ${newCode} from ${newest?.customerName}!`,
+              type: "success",
+            });
+            setTimeout(() => setStatusMessage(null), 4000);
+
+            // Pleasant notification chime via Web Audio API
+            try {
+              const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+              if (AudioCtx) {
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
+                gain.gain.setValueAtTime(0.18, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.4);
+              }
+            } catch {}
+          }
+          return data.recentOrders || [];
+        });
+        setLastSyncedTime(new Date());
+        if (manual) {
+          setStatusMessage({ text: "Command Center synchronized with live database", type: "success" });
+          setTimeout(() => setStatusMessage(null), 3000);
+        }
+      }
+    } catch (err) {
+      console.warn("Dashboard sync error:", err);
+    } finally {
+      if (manual) setIsRefreshing(false);
+    }
+  }, []);
+
+  // Poll every 8s and trigger instant refresh on window focus
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        refreshDashboard(false);
+      }
+    }, 8000);
+
+    const onVisibilityOrFocus = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        refreshDashboard(false);
+      }
+    };
+
+    window.addEventListener("focus", onVisibilityOrFocus);
+    document.addEventListener("visibilitychange", onVisibilityOrFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", onVisibilityOrFocus);
+      document.removeEventListener("visibilitychange", onVisibilityOrFocus);
+    };
+  }, [refreshDashboard]);
+
   // Sync with server updates
   useEffect(() => {
     setOrdersList(orders);
     setProductsList(products);
-  }, [orders, products]);
+    setStatsData(stats);
+  }, [orders, products, stats]);
 
   // Dynamic existing categories derived from current products
   const existingCategories = useMemo(() => {
@@ -275,9 +356,30 @@ export default function AdminClientView({
           <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
             Store Command Center
           </h1>
-          <p className="text-sm text-neutral-500 mt-1">
-            Real-time analytics, inventory management, and instant order fulfillment.
-          </p>
+          <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-neutral-500">
+            <span>Real-time analytics, inventory management, and instant order fulfillment.</span>
+            <span className="hidden sm:inline text-neutral-300">•</span>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="font-semibold">Live Auto-Sync</span>
+              <span className="text-emerald-400">•</span>
+              <span className="font-mono text-[11px] text-emerald-700" suppressHydrationWarning>
+                {lastSyncedTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+              </span>
+              <button
+                type="button"
+                onClick={() => refreshDashboard(true)}
+                disabled={isRefreshing}
+                className="ml-0.5 p-0.5 hover:bg-emerald-100 rounded transition text-emerald-800 cursor-pointer"
+                title="Refresh Live Data"
+              >
+                <RotateCw className={`w-3 h-3 ${isRefreshing ? "animate-spin" : ""}`} />
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -360,7 +462,7 @@ export default function AdminClientView({
               Total Revenue
             </p>
             <p className="text-2xl font-bold text-neutral-900 mt-0.5">
-              PKR {stats.totalRevenue.toLocaleString()}
+              PKR {statsData.totalRevenue.toLocaleString()}
             </p>
             <span className="text-[11px] text-emerald-600 font-medium">Recorded Sales</span>
           </div>
@@ -375,7 +477,7 @@ export default function AdminClientView({
               Total Orders
             </p>
             <p className="text-2xl font-bold text-neutral-900 mt-0.5">
-              {stats.totalOrders}
+              {statsData.totalOrders}
             </p>
             <Link href="/admin/manageOrders" className="text-[11px] text-neutral-500 hover:text-black font-medium underline">
               View All Orders &rarr;
@@ -392,7 +494,7 @@ export default function AdminClientView({
               Active Products
             </p>
             <p className="text-2xl font-bold text-neutral-900 mt-0.5">
-              {stats.totalProducts}
+              {statsData.totalProducts}
             </p>
             <Link href="/admin/manageProducts" className="text-[11px] text-neutral-500 hover:text-black font-medium underline">
               Manage Catalog &rarr;
@@ -409,7 +511,7 @@ export default function AdminClientView({
               Low Stock Alert
             </p>
             <p className="text-2xl font-bold text-neutral-900 mt-0.5">
-              {stats.lowStockCount}
+              {statsData.lowStockCount}
             </p>
             <span className="text-[11px] text-amber-600 font-medium">&lt; 10 units left</span>
           </div>

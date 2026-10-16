@@ -2,7 +2,8 @@ import React from "react";
 import { getAllOrdersAction } from "@/app/lib/actions/admin";
 import OrdersManager from "./(components)/OrdersManager";
 
-export const instant = false;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function ManageOrdersPage() {
   const allOrders = await getAllOrdersAction();

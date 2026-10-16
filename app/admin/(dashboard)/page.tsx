@@ -2,7 +2,8 @@ import React from "react";
 import { getDashboardData } from "@/app/lib/actions/admin";
 import AdminClientView from "./(components)/AdminClientView";
 
-export const instant = false;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function AdminDashboardPage() {
   const data = await getDashboardData();
