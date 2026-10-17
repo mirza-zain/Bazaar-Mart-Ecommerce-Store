@@ -332,7 +332,7 @@ export default function AdminNotificationCenter() {
           </div>
 
           <p className="mt-3 text-[10px] text-zinc-500 leading-relaxed text-center">
-            When enabled, you will receive real-time notifications on your device whenever an order is submitted on Bazaario.
+            When enabled, you will receive real-time notifications on your device whenever an order is submitted on me2one.
           </p>
         </div>
       )}

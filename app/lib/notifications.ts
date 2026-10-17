@@ -213,7 +213,7 @@ export async function sendTestPushNotificationAction() {
     }
 
     const payload: PushNotificationPayload = {
-      title: "🔔 Bazaario Notifications Active!",
+      title: "🔔 me2one Notifications Active!",
       body: "Browser Web Push notifications are successfully connected and functioning.",
       icon: "/favicon.ico",
       url: "/admin",

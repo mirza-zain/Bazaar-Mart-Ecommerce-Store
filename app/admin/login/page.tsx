@@ -7,8 +7,8 @@ import { isCanonicalAdmin } from "@/app/lib/security";
 import AdminLoginForm from "./(components)/AdminLoginForm";
 
 export const metadata: Metadata = {
-  title: "Admin Login | Bazaario",
-  description: "Sign in to the Bazaario Store Operations Console",
+  title: "Admin Login | me2one",
+  description: "Sign in to the me2one Store Operations Console",
   robots: {
     index: false,
     follow: false,

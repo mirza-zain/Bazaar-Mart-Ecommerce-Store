@@ -2,9 +2,9 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Bazaario Admin Console',
-    short_name: 'Bazaario Admin',
-    description: 'Store Operations & Order Management Console for Bazaario',
+    name: 'me2one Admin Console',
+    short_name: 'me2one Admin',
+    description: 'Store Operations & Order Management Console for me2one',
     id: '/admin',
     start_url: '/admin',
     scope: '/',

@@ -8,11 +8,11 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "Bazaario | Modern Fashion, Streetwear & Jewelry",
-    template: "%s | Bazaario",
+    default: "me2one | Modern Fashion, Streetwear & Jewelry",
+    template: "%s | me2one",
   },
   description:
-    "Explore modern streetwear hoodies, tees, fine jewelry, and accessories at Bazaario. Free express shipping over PKR 8,000 across Pakistan with Cash on Delivery and Bank Transfer.",
+    "Explore modern streetwear hoodies, tees, fine jewelry, and accessories at me2one. Free express shipping over PKR 8,000 across Pakistan with Cash on Delivery and Bank Transfer.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     ],
   },
   keywords: [
-    "Bazaario",
+    "me2one",
     "streetwear Pakistan",
     "online clothing Karachi",
     "hoodies Pakistan",
@@ -36,18 +36,18 @@ export const metadata: Metadata = {
     "fashion accessories",
   ],
   openGraph: {
-    title: "Bazaario | Modern Fashion, Streetwear & Jewelry",
+    title: "me2one | Modern Fashion, Streetwear & Jewelry",
     description:
-      "Explore modern streetwear hoodies, tees, fine jewelry, and accessories at Bazaario. Free delivery over PKR 8,000 nationwide.",
-    siteName: "Bazaario",
+      "Explore modern streetwear hoodies, tees, fine jewelry, and accessories at me2one. Free delivery over PKR 8,000 nationwide.",
+    siteName: "me2one",
     locale: "en_PK",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Bazaario | Modern Fashion, Streetwear & Jewelry",
+    title: "me2one | Modern Fashion, Streetwear & Jewelry",
     description:
-      "Discover high-quality streetwear, fine jewelry, and everyday accessories at Bazaario.",
+      "Discover high-quality streetwear, fine jewelry, and everyday accessories at me2one.",
   },
 };
 

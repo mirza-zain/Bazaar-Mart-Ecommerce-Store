@@ -55,7 +55,7 @@ export default function Navbar({ user }: NavbarProps) {
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
             <h1 className="text-xl md:text-2xl font-bold font-[Gebuk] tracking-tight truncate">
-              Bazaario Admin
+              me2one Admin
             </h1>
             <p className="text-xs text-neutral-400 mt-0.5 truncate">Store Operations Console</p>
           </div>

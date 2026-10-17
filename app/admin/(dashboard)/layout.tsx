@@ -8,13 +8,13 @@ import { isCanonicalAdmin } from "@/app/lib/security";
 import Navbar from "./(components)/Navbar";
 
 export const metadata: Metadata = {
-  title: "Bazaario Admin",
+  title: "me2one Admin",
   description: "Store Operations Console",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Bazaario Admin",
+    title: "me2one Admin",
   },
   icons: {
     icon: [

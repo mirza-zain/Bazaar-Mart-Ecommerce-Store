@@ -107,7 +107,7 @@ export default function ContactPage() {
         <div className="space-y-4">
           {/* WhatsApp Direct */}
           <a
-            href="https://wa.me/923332244373?text=Hello%20Bazaario%2C%20I%20have%20an%20inquiry%20regarding%20an%20order"
+            href="https://wa.me/923332244373?text=Hello%20me2one%2C%20I%20have%20an%20inquiry%20regarding%20an%20order"
             target="_blank"
             rel="noopener noreferrer"
             className="p-6 bg-emerald-50 rounded-2xl border border-emerald-200/80 flex items-start gap-4 hover:border-emerald-400 transition group block shadow-xs"
@@ -183,7 +183,7 @@ export default function ContactPage() {
               </div>
               <h3 className="text-2xl font-bold text-emerald-950">Message Sent Successfully!</h3>
               <p className="text-sm text-emerald-800 max-w-md mx-auto leading-relaxed">
-                Thank you for reaching out to Bazaario. We have logged your inquiry and our support team will respond to your email address shortly.
+                Thank you for reaching out to me2one. We have logged your inquiry and our support team will respond to your email address shortly.
               </p>
               <div className="pt-2">
                 <button

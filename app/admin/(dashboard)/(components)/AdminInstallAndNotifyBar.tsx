@@ -242,7 +242,7 @@ export default function AdminInstallAndNotifyBar() {
                 </span>
               </div>
               <p className="text-xs text-neutral-400 mt-1 max-w-xl leading-relaxed">
-                Install Bazaario Admin directly onto your phone screen like a native app and enable instant browser push notifications for every incoming order.
+                Install me2one Admin directly onto your phone screen like a native app and enable instant browser push notifications for every incoming order.
               </p>
             </div>
           </div>
@@ -351,7 +351,7 @@ export default function AdminInstallAndNotifyBar() {
                 <Smartphone className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-bold text-base sm:text-lg text-white">Install Bazaario Admin</h3>
+                <h3 className="font-bold text-base sm:text-lg text-white">Install me2one Admin</h3>
                 <p className="text-xs text-zinc-400">Add to your Phone Home Screen in seconds</p>
               </div>
             </div>

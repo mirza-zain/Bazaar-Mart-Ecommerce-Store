@@ -1011,7 +1011,7 @@ export default function CheckoutPage() {
                       <span>Meezan Bank</span>
                       <span className="px-1.5 py-0.5 bg-neutral-100 rounded text-[10px]">Bank</span>
                     </div>
-                    <p className="text-neutral-500">Title: <span className="text-neutral-900 font-medium">BAZZARIO OFFICIAL</span></p>
+                    <p className="text-neutral-500">Title: <span className="text-neutral-900 font-medium">ME2ONE OFFICIAL</span></p>
                     <p className="text-neutral-500 font-mono">Acc: <span className="text-neutral-900 font-semibold select-all">01020108392019</span></p>
                     <p className="text-neutral-500 font-mono text-[11px]">IBAN: <span className="text-neutral-900 select-all">PK36MEZN0001020108392019</span></p>
                   </div>
@@ -1022,7 +1022,7 @@ export default function CheckoutPage() {
                       <span>EasyPaisa / JazzCash / Raast</span>
                       <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[10px]">Instant</span>
                     </div>
-                    <p className="text-neutral-500">Title: <span className="text-neutral-900 font-medium">BAZZARIO</span></p>
+                    <p className="text-neutral-500">Title: <span className="text-neutral-900 font-medium">ME2ONE</span></p>
                     <p className="text-neutral-500 font-mono">Number: <span className="text-neutral-900 font-semibold select-all">0300-1234567</span></p>
                     <p className="text-neutral-500 text-[11px]">Raast ID: <span className="text-neutral-900 select-all">03001234567</span></p>
                   </div>

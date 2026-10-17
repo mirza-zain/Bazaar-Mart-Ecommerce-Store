@@ -58,7 +58,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* Brand Info & Newsletter */}
           <div className="lg:col-span-2 space-y-4">
-            <h3 className="text-3xl font-bold tracking-tight">Bazaario</h3>
+            <h3 className="text-3xl font-bold tracking-tight">me2one</h3>
             <p className="text-neutral-400 text-sm max-w-sm leading-relaxed">
               Modern streetwear, timeless jewelry, and everyday accessories designed for individuals who move with confidence.
             </p>
@@ -69,7 +69,7 @@ export default function Footer() {
               </p>
               {subscribed ? (
                 <div className="p-3 bg-neutral-800 border border-neutral-700 rounded-xl text-xs text-emerald-400 font-medium">
-                  ✓ Thank you for subscribing to Bazaario VIP Club!
+                  ✓ Thank you for subscribing to me2one VIP Club!
                 </div>
               ) : (
                 <form onSubmit={handleSubscribe} className="flex gap-2 max-w-md">
@@ -152,7 +152,7 @@ export default function Footer() {
       {/* Bottom Legal & Payment Bar */}
       <div className="border-t border-neutral-800 py-6 px-6 md:px-12 text-xs text-neutral-400">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© 2026 Bazaario. All rights reserved.</p>
+          <p>© 2026 me2one. All rights reserved.</p>
           <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-3 text-neutral-300 font-medium">
             <span>Cash on Delivery</span>
             <span>•</span>

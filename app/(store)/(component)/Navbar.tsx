@@ -36,7 +36,7 @@ export default function Navbar() {
     <nav className="relative w-full py-5 flex justify-between items-center px-5 z-50 bg-white border-b border-neutral-100">
       <div className="md:mx-5">
         <Link href="/">
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">Bazaario</h2>
+          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">me2one</h2>
         </Link>
       </div>
 
@@ -177,7 +177,7 @@ export default function Navbar() {
           {/* Mobile Menu Header */}
           <div className="flex justify-between items-center w-full pb-4 border-b border-neutral-100">
             <Link href="/" onClick={() => setMenuOpen(false)}>
-              <h2 className="text-3xl font-semibold">Bazaario</h2>
+              <h2 className="text-3xl font-semibold">me2one</h2>
             </Link>
             <div className="flex items-center gap-6">
               <button
@@ -303,7 +303,7 @@ export default function Navbar() {
 
           {/* Mobile Menu Footer */}
           <div className="text-center text-xs text-neutral-400 pb-2 border-t border-neutral-100 pt-3">
-            <p>© Bazaario. All rights reserved.</p>
+            <p>© me2one. All rights reserved.</p>
           </div>
         </div>
       )}

@@ -1,4 +1,4 @@
-// Bazaario Service Worker for Web Push Notifications & PWA Installation
+// me2one Service Worker for Web Push Notifications & PWA Installation
 
 self.addEventListener('install', function (event) {
   // Activate worker immediately
@@ -21,13 +21,13 @@ self.addEventListener('push', function (event) {
 
   try {
     const payload = event.data.json();
-    const title = payload.title || 'Bazaario Notification';
+    const title = payload.title || 'me2one Notification';
     const options = {
       body: payload.body || 'You have a new update.',
       icon: payload.icon || '/icon-192x192.png',
       badge: payload.badge || '/icon-192x192.png',
       vibrate: [200, 100, 200],
-      tag: payload.data?.orderId ? `order-${payload.data.orderId}` : 'bazaario-alert',
+      tag: payload.data?.orderId ? `order-${payload.data.orderId}` : 'me2one-alert',
       data: {
         url: payload.url || '/admin/manageOrders',
         timestamp: Date.now(),
