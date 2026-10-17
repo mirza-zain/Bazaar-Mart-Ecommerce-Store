@@ -50,7 +50,6 @@ export default async function ProductDetailPage({ params }: Props) {
 
   const reviewsSummary = await getProductReviews(productId);
 
-  const isLowStock = Number(product.stock) < 10;
   const inStock = Number(product.stock) > 0;
 
   return (
@@ -120,26 +119,16 @@ export default async function ProductDetailPage({ params }: Props) {
             <span
               className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
                 inStock
-                  ? isLowStock
-                    ? "bg-amber-100 text-amber-800"
-                    : "bg-emerald-100 text-emerald-800"
+                  ? "bg-emerald-100 text-emerald-800"
                   : "bg-rose-100 text-rose-800"
               }`}
             >
               <span
                 className={`w-2 h-2 rounded-full ${
-                  inStock
-                    ? isLowStock
-                      ? "bg-amber-600"
-                      : "bg-emerald-600"
-                    : "bg-rose-600"
+                  inStock ? "bg-emerald-600" : "bg-rose-600"
                 }`}
               />
-              {inStock
-                ? isLowStock
-                  ? `Only ${product.stock} units left!`
-                  : "In Stock & Ready to Ship"
-                : "Out of Stock"}
+              {inStock ? "In Stock & Ready to Ship" : "Out of Stock"}
             </span>
           </div>
 

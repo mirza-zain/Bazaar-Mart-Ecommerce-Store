@@ -493,7 +493,7 @@ export default function ShopFilterView({
               <option value="price-asc">Price: Low to High</option>
               <option value="price-desc">Price: High to Low</option>
               <option value="name-asc">Name: A to Z</option>
-              <option value="in-stock">Highest Stock</option>
+              <option value="in-stock">In Stock First</option>
             </select>
           </div>
         </div>
@@ -684,7 +684,6 @@ export default function ShopFilterView({
               {paginatedProducts.map((item) => {
                 const stockNum = Number(item.stock);
                 const isOutOfStock = stockNum <= 0;
-                const isLowStock = stockNum > 0 && stockNum <= 5;
 
                 return (
                   <Link
@@ -704,17 +703,12 @@ export default function ShopFilterView({
                         className="object-cover object-top group-hover:scale-105 transition-transform duration-300"
                       />
 
-                      {/* Stock Badges */}
-                      {isOutOfStock ? (
+                      {/* Stock Badge */}
+                      {isOutOfStock && (
                         <div className="absolute top-3 left-3 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg backdrop-blur-xs">
                           Out of Stock
                         </div>
-                      ) : isLowStock ? (
-                        <div className="absolute top-3 left-3 bg-amber-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-xs flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3" />
-                          <span>Only {stockNum} Left</span>
-                        </div>
-                      ) : null}
+                      )}
 
                       {/* Hover Quick Action */}
                       <div className="absolute inset-x-3 bottom-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden sm:block">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Bell, BellOff, CheckCircle2, AlertTriangle, Send, Loader2, Sparkles, X } from 'lucide-react';
 import {
   savePushSubscriptionAction,
@@ -26,6 +26,21 @@ export default function AdminNotificationCenter() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
 
   const checkExistingSubscription = async () => {
     try {
@@ -177,12 +192,12 @@ export default function AdminNotificationCenter() {
   }
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       {/* Bell Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`relative p-2 rounded-xl transition-all duration-200 border ${
+        className={`relative p-2 rounded-xl transition-all duration-200 border shrink-0 ${
           isSubscribed
             ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20'
             : 'bg-zinc-800/80 border-zinc-700/60 text-zinc-400 hover:text-white hover:bg-zinc-850'
@@ -200,7 +215,7 @@ export default function AdminNotificationCenter() {
 
       {/* Dropdown Modal */}
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-84 sm:w-96 bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-2xl p-5 z-50 text-left backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute right-0 md:right-auto md:left-0 mt-3 w-[calc(100vw-2.5rem)] sm:w-96 max-w-sm sm:max-w-md bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-2xl p-5 z-50 text-left backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
           <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">

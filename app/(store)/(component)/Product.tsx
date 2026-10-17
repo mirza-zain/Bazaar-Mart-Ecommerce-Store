@@ -27,15 +27,11 @@ export default async function Products({ limit, category }: Prop) {
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 className="object-cover object-top group-hover:scale-105 transition-transform duration-300"
               />
-              {Number(item.stock) <= 0 ? (
+              {Number(item.stock) <= 0 && (
                 <div className="absolute top-3 left-3 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg backdrop-blur-xs">
                   Out of Stock
                 </div>
-              ) : Number(item.stock) <= 5 ? (
-                <div className="absolute top-3 left-3 bg-amber-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-xs">
-                  Only {item.stock} Left
-                </div>
-              ) : null}
+              )}
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-semibold text-neutral-900 group-hover:text-neutral-600 transition truncate">

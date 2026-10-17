@@ -133,17 +133,13 @@ export default function ProductPurchaseActions({
               <span className="text-lg font-bold text-neutral-900">
                 PKR {currentPrice.toLocaleString()}
               </span>
-              {currentStock <= 5 && currentStock > 0 ? (
-                <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                  Only {currentStock} left!
-                </span>
-              ) : currentStock <= 0 ? (
-                <span className="text-[11px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
-                  Currently out of stock
+              {currentStock <= 0 ? (
+                <span className="text-[11px] font-semibold text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">
+                  Out of Stock
                 </span>
               ) : (
-                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  In stock ({currentStock} units)
+                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  In Stock
                 </span>
               )}
             </div>
@@ -151,75 +147,82 @@ export default function ProductPurchaseActions({
         </div>
       )}
 
-      {/* Quantity Selector */}
-      <div>
-        <label className="block text-xs font-semibold uppercase text-neutral-700 mb-2">
-          Quantity
-        </label>
-        <div className="inline-flex items-center border border-neutral-200 rounded-xl bg-white p-1">
-          <button
-            type="button"
-            disabled={quantity <= 1 || !inStock}
-            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent transition cursor-pointer"
-            aria-label="Decrease quantity"
-          >
-            <Minus className="w-4 h-4 text-neutral-700" />
-          </button>
-          <span className="w-12 text-center text-sm font-bold text-neutral-900">
-            {quantity}
-          </span>
-          <button
-            type="button"
-            disabled={quantity >= currentStock || !inStock}
-            onClick={() => setQuantity((q) => Math.min(currentStock, q + 1))}
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent transition cursor-pointer"
-            aria-label="Increase quantity"
-          >
-            <Plus className="w-4 h-4 text-neutral-700" />
-          </button>
+      {/* Quantity Selector (Only visible if in stock) */}
+      {inStock && (
+        <div>
+          <label className="block text-xs font-semibold uppercase text-neutral-700 mb-2">
+            Quantity
+          </label>
+          <div className="inline-flex items-center border border-neutral-200 rounded-xl bg-white p-1">
+            <button
+              type="button"
+              disabled={quantity <= 1}
+              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+              className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent transition cursor-pointer"
+              aria-label="Decrease quantity"
+            >
+              <Minus className="w-4 h-4 text-neutral-700" />
+            </button>
+            <span className="w-12 text-center text-sm font-bold text-neutral-900">
+              {quantity}
+            </span>
+            <button
+              type="button"
+              disabled={quantity >= currentStock}
+              onClick={() => setQuantity((q) => Math.min(currentStock, q + 1))}
+              className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent transition cursor-pointer"
+              aria-label="Increase quantity"
+            >
+              <Plus className="w-4 h-4 text-neutral-700" />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 pt-1">
-        <button
-          type="button"
-          disabled={!inStock}
-          onClick={handleAddToCart}
-          className={`flex-1 py-4 px-6 text-base font-semibold rounded-2xl transition shadow-sm flex items-center justify-center gap-2 cursor-pointer ${
-            added
-              ? "bg-emerald-600 text-white"
-              : inStock
-              ? "bg-black text-white hover:bg-neutral-800"
-              : "bg-neutral-200 text-neutral-400 cursor-not-allowed"
-          }`}
-        >
-          {added ? (
-            <>
-              <Check className="w-5 h-5" />
-              <span>Added to Bag!</span>
-            </>
-          ) : inStock ? (
-            <>
-              <ShoppingBag className="w-5 h-5" />
-              <span>Add to Bag</span>
-            </>
-          ) : (
-            <span>Out of Stock</span>
-          )}
-        </button>
+      {inStock ? (
+        <div className="flex flex-col sm:flex-row gap-3 pt-1">
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            className={`flex-1 py-4 px-6 text-base font-semibold rounded-2xl transition shadow-xs flex items-center justify-center gap-2 cursor-pointer ${
+              added
+                ? "bg-emerald-600 text-white"
+                : "bg-black text-white hover:bg-neutral-800"
+            }`}
+          >
+            {added ? (
+              <>
+                <Check className="w-5 h-5" />
+                <span>Added to Bag!</span>
+              </>
+            ) : (
+              <>
+                <ShoppingBag className="w-5 h-5" />
+                <span>Add to Bag</span>
+              </>
+            )}
+          </button>
 
-        <button
-          type="button"
-          disabled={!inStock}
-          onClick={handleBuyNow}
-          className="flex-1 py-4 px-6 border-2 border-neutral-900 text-neutral-900 text-base font-semibold rounded-2xl hover:bg-neutral-100 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed transition flex items-center justify-center gap-2 cursor-pointer"
-        >
-          <span>Buy Now</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={handleBuyNow}
+            className="flex-1 py-4 px-6 border-2 border-neutral-900 text-neutral-900 text-base font-semibold rounded-2xl hover:bg-neutral-100 transition flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <span>Buy Now</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
+        <div className="pt-1 space-y-2">
+          <div className="w-full py-4 px-6 text-base font-bold rounded-2xl bg-neutral-100 border border-neutral-200 text-neutral-500 flex items-center justify-center gap-2 select-none">
+            <span>Out of Stock</span>
+          </div>
+          <p className="text-xs text-neutral-400 text-center">
+            This item is currently sold out. Please select another variant or check back soon.
+          </p>
+        </div>
+      )}
 
       {/* Added Confirmation Banner */}
       {added && (

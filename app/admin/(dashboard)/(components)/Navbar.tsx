@@ -51,14 +51,18 @@ export default function Navbar({ user }: NavbarProps) {
 
   return (
     <nav className="flex w-full shrink-0 flex-col border-b border-neutral-200 bg-white px-4 py-4 md:min-h-screen md:w-64 md:border-b-0 md:border-r md:px-5 md:py-8 print:hidden">
-      <div className="border-b border-neutral-100 px-1 pb-4 md:px-3 md:pb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold font-[Gebuk] tracking-tight">
-            Bazaario Admin
-          </h1>
-          <p className="text-xs text-neutral-400 mt-0.5">Store Operations Console</p>
+      <div className="border-b border-neutral-100 pb-4 md:pb-6">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl md:text-2xl font-bold font-[Gebuk] tracking-tight truncate">
+              Bazaario Admin
+            </h1>
+            <p className="text-xs text-neutral-400 mt-0.5 truncate">Store Operations Console</p>
+          </div>
+          <div className="shrink-0">
+            <AdminNotificationCenter />
+          </div>
         </div>
-        <AdminNotificationCenter />
       </div>
 
       {/* Admin User Info Pill */}
