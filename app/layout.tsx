@@ -6,13 +6,20 @@ export const viewport: Viewport = {
   themeColor: "#09090b",
 };
 
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://me2one.vercel.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: "me2one | Modern Fashion, Streetwear & Jewelry",
     template: "%s | me2one",
   },
   description:
-    "Explore modern streetwear hoodies, tees, fine jewelry, and accessories at me2one. Free express shipping over PKR 8,000 across Pakistan with Cash on Delivery and Bank Transfer.",
+    "Explore modern streetwear hoodies, graphic tees, fine jewelry, and everyday accessories at me2one. Enjoy express delivery across Pakistan with Cash on Delivery and verified Bank Transfer.",
+  applicationName: "me2one",
+  alternates: {
+    canonical: siteUrl,
+  },
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -29,17 +36,41 @@ export const metadata: Metadata = {
   },
   keywords: [
     "me2one",
+    "me2one clothing",
+    "me2one streetwear",
     "streetwear Pakistan",
     "online clothing Karachi",
     "hoodies Pakistan",
-    "jewelry",
+    "oversized hoodies",
+    "graphic tees Pakistan",
+    "fine jewelry Pakistan",
+    "cuban chains Karachi",
+    "streetwear fashion brand",
+    "cash on delivery clothing Pakistan",
     "fashion accessories",
   ],
+  authors: [{ name: "me2one Official", url: siteUrl }],
+  creator: "me2one",
+  publisher: "me2one",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   openGraph: {
     title: "me2one | Modern Fashion, Streetwear & Jewelry",
     description:
-      "Explore modern streetwear hoodies, tees, fine jewelry, and accessories at me2one. Free delivery over PKR 8,000 nationwide.",
+      "Explore modern streetwear hoodies, graphic tees, fine jewelry, and accessories at me2one. Free express delivery over PKR 8,000 nationwide.",
+    url: siteUrl,
     siteName: "me2one",
+    images: [
+      {
+        url: "/icon-512x512.png",
+        width: 512,
+        height: 512,
+        alt: "me2one - Modern Fashion, Streetwear & Jewelry",
+      },
+    ],
     locale: "en_PK",
     type: "website",
   },
@@ -48,6 +79,20 @@ export const metadata: Metadata = {
     title: "me2one | Modern Fashion, Streetwear & Jewelry",
     description:
       "Discover high-quality streetwear, fine jewelry, and everyday accessories at me2one.",
+    images: ["/icon-512x512.png"],
+    creator: "@me2one",
+    site: "@me2one",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 
@@ -56,11 +101,61 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${siteUrl}/#organization`,
+        name: "me2one",
+        url: siteUrl,
+        logo: {
+          "@type": "ImageObject",
+          url: `${siteUrl}/icon-512x512.png`,
+          width: 512,
+          height: 512,
+        },
+        sameAs: [
+          "https://www.instagram.com",
+          "https://wa.me/923332244373",
+        ],
+        contactPoint: {
+          "@type": "ContactPoint",
+          telephone: "+92-333-2244373",
+          contactType: "customer service",
+          areaServed: "PK",
+          availableLanguage: ["English", "Urdu"],
+        },
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${siteUrl}/#website`,
+        url: siteUrl,
+        name: "me2one",
+        description: "Modern Fashion, Streetwear & Jewelry in Pakistan",
+        publisher: {
+          "@id": `${siteUrl}/#organization`,
+        },
+        potentialAction: {
+          "@type": "SearchAction",
+          target: `${siteUrl}/products?search={search_term_string}`,
+          "query-input": "required name=search_term_string",
+        },
+      },
+    ],
+  };
+
   return (
     <html
       lang="en"
       className={`h-full antialiased`}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className="min-h-full antialiased">
         <CartProvider>
           {children}

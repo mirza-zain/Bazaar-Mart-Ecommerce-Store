@@ -12,9 +12,17 @@ interface Props {
 export const instant = false;
 
 export const metadata: Metadata = {
-  title: "Explore Catalog",
+  title: "Explore Catalog | Streetwear & Accessories",
   description:
-    "Filter and browse through our complete collection of modern streetwear hoodies, graphic tees, jewelry, and accessories.",
+    "Filter and browse through our complete collection of modern streetwear hoodies, graphic tees, fine jewelry, and everyday accessories at me2one.",
+  alternates: {
+    canonical: "/products",
+  },
+  openGraph: {
+    title: "Explore Catalog | me2one Streetwear & Accessories",
+    description:
+      "Filter and browse through our complete collection of modern streetwear hoodies, graphic tees, fine jewelry, and everyday accessories at me2one.",
+  },
 };
 
 export default async function ProductsCatalogPage({ searchParams }: Props) {

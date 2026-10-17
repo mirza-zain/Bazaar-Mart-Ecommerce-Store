@@ -4,7 +4,7 @@ import { db } from "@/app/lib/db";
 import * as schema from "@/app/db/schema";
 import { nextCookies } from "better-auth/next-js";
 
-const productionUrl = "https://bazzarmart.vercel.app";
+const productionUrl = "https://me2one.vercel.app";
 const localUrl = "http://localhost:3000";
 
 export const auth = betterAuth({
@@ -31,7 +31,7 @@ export const auth = betterAuth({
     enabled: true,
     disableSignUp: true, // Disables public sign-up completely
   },
-  secret: process.env.BETTER_AUTH_SECRET || "bazzario_better_auth_secret_secure_key_2026_kamran_admin_99218",
+  secret: process.env.BETTER_AUTH_SECRET || "me2one_better_auth_secret_secure_key_2026_kamran_admin_99218",
   baseURL:
     process.env.BETTER_AUTH_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
@@ -40,6 +40,7 @@ export const auth = betterAuth({
   trustedOrigins: [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://me2one.vercel.app",
     "https://bazzarmart.vercel.app",
     "https://*.vercel.app",
     ...(process.env.NEXT_PUBLIC_APP_URL ? [process.env.NEXT_PUBLIC_APP_URL] : []),

@@ -23,13 +23,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = await getProductById(productId);
   if (!product) return { title: "Product Not Found" };
 
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://me2one.vercel.app";
+  const productUrl = `${siteUrl}/products/${product.id}`;
+
   return {
     title: product.name,
     description: product.description.slice(0, 160),
+    alternates: {
+      canonical: productUrl,
+    },
     openGraph: {
       title: `${product.name} | me2one`,
       description: product.description.slice(0, 160),
-      images: product.image ? [{ url: product.image }] : [],
+      url: productUrl,
+      images: product.image ? [{ url: product.image, alt: product.name }] : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.name} | me2one`,
+      description: product.description.slice(0, 160),
+      images: product.image ? [product.image] : [],
     },
   };
 }
@@ -51,9 +64,48 @@ export default async function ProductDetailPage({ params }: Props) {
   const reviewsSummary = await getProductReviews(productId);
 
   const inStock = Number(product.stock) > 0;
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://me2one.vercel.app";
+
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    image: product.image || `${siteUrl}/images/img1.jpg`,
+    description: product.description,
+    brand: {
+      "@type": "Brand",
+      name: "me2one",
+    },
+    offers: {
+      "@type": "Offer",
+      url: `${siteUrl}/products/${product.id}`,
+      priceCurrency: "PKR",
+      price: product.price,
+      availability: inStock
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      seller: {
+        "@type": "Organization",
+        name: "me2one",
+      },
+    },
+    ...(reviewsSummary.totalReviews > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: reviewsSummary.averageRating.toFixed(1),
+            reviewCount: reviewsSummary.totalReviews,
+          },
+        }
+      : {}),
+  };
 
   return (
     <div className="w-full max-w-7xl mx-auto px-5 md:px-12 py-10">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
       {/* Back Link */}
       <div className="mb-8">
         <Link
