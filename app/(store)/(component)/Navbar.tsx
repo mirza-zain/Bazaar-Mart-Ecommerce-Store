@@ -35,8 +35,13 @@ export default function Navbar() {
   return (
     <nav className="relative w-full py-5 flex justify-between items-center px-5 z-50 bg-white border-b border-neutral-100">
       <div className="md:mx-5">
-        <Link href="/">
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">me2one</h2>
+        <Link href="/" className="group flex flex-col items-start leading-none select-none">
+          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-neutral-900 group-hover:opacity-80 transition-opacity">
+            MartInn
+          </h2>
+          <span className="text-[10px] sm:text-[11px] font-medium tracking-[0.2em] uppercase text-neutral-400 mt-1">
+            KD Traders
+          </span>
         </Link>
       </div>
 
@@ -176,8 +181,13 @@ export default function Navbar() {
         <div className="fixed inset-0 z-50 bg-white flex flex-col justify-between p-6 md:hidden overflow-y-auto">
           {/* Mobile Menu Header */}
           <div className="flex justify-between items-center w-full pb-4 border-b border-neutral-100">
-            <Link href="/" onClick={() => setMenuOpen(false)}>
-              <h2 className="text-3xl font-semibold">me2one</h2>
+            <Link href="/" onClick={() => setMenuOpen(false)} className="group flex flex-col items-start leading-none select-none">
+              <h2 className="text-3xl font-semibold text-neutral-900 group-hover:opacity-80 transition-opacity">
+                MartInn
+              </h2>
+              <span className="text-[10px] font-medium tracking-[0.2em] uppercase text-neutral-400 mt-1">
+                KD Traders
+              </span>
             </Link>
             <div className="flex items-center gap-6">
               <button
@@ -303,7 +313,7 @@ export default function Navbar() {
 
           {/* Mobile Menu Footer */}
           <div className="text-center text-xs text-neutral-400 pb-2 border-t border-neutral-100 pt-3">
-            <p>© me2one. All rights reserved.</p>
+            <p>© 2020 MartInn. All rights reserved.</p>
           </div>
         </div>
       )}

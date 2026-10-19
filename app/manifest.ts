@@ -2,9 +2,9 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'me2one Admin Console',
-    short_name: 'me2one Admin',
-    description: 'Store Operations & Order Management Console for me2one',
+    name: 'MartInn Admin Console',
+    short_name: 'MartInn Admin',
+    description: 'Store Operations & Order Management Console for MartInn (KD Traders)',
     id: '/admin',
     start_url: '/admin',
     scope: '/',

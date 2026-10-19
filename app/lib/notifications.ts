@@ -213,7 +213,7 @@ export async function sendTestPushNotificationAction() {
     }
 
     const payload: PushNotificationPayload = {
-      title: "🔔 me2one Notifications Active!",
+      title: "🔔 MartInn Notifications Active!",
       body: "Browser Web Push notifications are successfully connected and functioning.",
       icon: "/favicon.ico",
       url: "/admin",

@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Shopping Bag",
   description:
-    "Review items in your me2one shopping bag. Enjoy free express delivery across Pakistan on orders over PKR 8,000.",
+    "Review items in your MartInn shopping bag. Enjoy free express delivery across Pakistan on orders over PKR 8,000.",
   robots: {
     index: false,
     follow: true,

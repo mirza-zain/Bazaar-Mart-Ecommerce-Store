@@ -177,7 +177,7 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
       <html>
         <head>
           <meta charset="utf-8" />
-          <title>Invoice #ORD-${order.id.toString().padStart(4, "0")} - ${order.orderCode || ""} | ME2ONE</title>
+          <title>Invoice #ORD-${order.id.toString().padStart(4, "0")} - ${order.orderCode || ""} | MartInn</title>
           <style>
             @page {
               size: A4 portrait;
@@ -332,8 +332,9 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
           <div class="invoice-card">
             <div class="header-bar">
               <div>
-                <div class="brand-title">ME2ONE</div>
-                <div class="brand-sub">Store Fulfillment & Official Tax Invoice</div>
+                <div class="brand-title">MartInn</div>
+                <div style="font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: #6b7280; margin-top: 1px;">KD Traders</div>
+                <div class="brand-sub" style="margin-top: 3px;">Store Fulfillment & Official Tax Invoice</div>
                 <div class="brand-sub">Helpline: +92 333 2244373 • Karachi, Pakistan</div>
               </div>
               <div class="order-meta">
@@ -405,8 +406,8 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
             </div>
 
             <div class="footer-card">
-              <p style="font-weight: 700; color: #111;">Thank you for shopping with ME2ONE</p>
-              <p style="margin-top: 2px;">Karachi, Pakistan • Helpline: +92 333 2244373 • www.me2one.pk</p>
+              <p style="font-weight: 700; color: #111;">Thank you for shopping with MartInn (KD Traders)</p>
+              <p style="margin-top: 2px;">Karachi, Pakistan • Helpline: +92 333 2244373</p>
               <p style="font-size: 10px; color: #9ca3af; margin-top: 4px;">This is a computer generated official invoice and packing slip.</p>
             </div>
           </div>
@@ -415,10 +416,10 @@ export default function OrdersManager({ initialOrders }: OrdersManagerProps) {
     `;
 
     // Direct isolated iframe printing for 100% 1-page accuracy
-    let iframe = document.getElementById("me2one-print-iframe") as HTMLIFrameElement;
+    let iframe = document.getElementById("martinn-print-iframe") as HTMLIFrameElement;
     if (!iframe) {
       iframe = document.createElement("iframe");
-      iframe.id = "me2one-print-iframe";
+      iframe.id = "martinn-print-iframe";
       iframe.style.position = "fixed";
       iframe.style.right = "0";
       iframe.style.bottom = "0";

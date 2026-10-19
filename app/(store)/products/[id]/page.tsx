@@ -33,14 +33,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       canonical: productUrl,
     },
     openGraph: {
-      title: `${product.name} | me2one`,
+      title: `${product.name} | MartInn`,
       description: product.description.slice(0, 160),
       url: productUrl,
       images: product.image ? [{ url: product.image, alt: product.name }] : [],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${product.name} | me2one`,
+      title: `${product.name} | MartInn`,
       description: product.description.slice(0, 160),
       images: product.image ? [product.image] : [],
     },
@@ -74,7 +74,7 @@ export default async function ProductDetailPage({ params }: Props) {
     description: product.description,
     brand: {
       "@type": "Brand",
-      name: "me2one",
+      name: "MartInn (KD Traders)",
     },
     offers: {
       "@type": "Offer",
@@ -86,7 +86,7 @@ export default async function ProductDetailPage({ params }: Props) {
         : "https://schema.org/OutOfStock",
       seller: {
         "@type": "Organization",
-        name: "me2one",
+        name: "MartInn",
       },
     },
     ...(reviewsSummary.totalReviews > 0

@@ -8,13 +8,13 @@ import { isCanonicalAdmin } from "@/app/lib/security";
 import Navbar from "./(components)/Navbar";
 
 export const metadata: Metadata = {
-  title: "me2one Admin",
+  title: "MartInn Admin (KD Traders)",
   description: "Store Operations Console",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "me2one Admin",
+    title: "MartInn Admin",
   },
   icons: {
     icon: [

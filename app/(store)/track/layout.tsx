@@ -4,11 +4,11 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Track Your Order",
   description:
-    "Track your me2one streetwear & accessories shipment in real-time. Enter your Order ID or tracking code to view live dispatch and delivery updates.",
+    "Track your MartInn streetwear & accessories shipment in real-time. Enter your Order ID or tracking code to view live dispatch and delivery updates.",
   openGraph: {
-    title: "Track Your Order | me2one",
+    title: "Track Your Order | MartInn",
     description:
-      "Check live courier dispatch and delivery updates for your me2one order across Pakistan.",
+      "Check live courier dispatch and delivery updates for your MartInn order across Pakistan.",
   },
   robots: {
     index: false,

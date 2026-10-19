@@ -54,10 +54,10 @@ export default function Navbar({ user }: NavbarProps) {
       <div className="border-b border-neutral-100 pb-4 md:pb-6">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl md:text-2xl font-bold font-[Gebuk] tracking-tight truncate">
-              me2one Admin
+            <h1 className="text-xl md:text-2xl font-bold font-[Gebuk] tracking-tight truncate leading-none">
+              MartInn Admin
             </h1>
-            <p className="text-xs text-neutral-400 mt-0.5 truncate">Store Operations Console</p>
+            <p className="text-[10px] tracking-widest uppercase font-semibold text-neutral-400 mt-1 truncate">KD Traders</p>
           </div>
           <div className="shrink-0">
             <AdminNotificationCenter />

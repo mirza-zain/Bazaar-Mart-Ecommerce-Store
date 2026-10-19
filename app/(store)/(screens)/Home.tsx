@@ -47,7 +47,7 @@ export default function HomePage() {
           {/* Eyebrow Pill */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-neutral-100 rounded-full text-xs font-semibold tracking-wider uppercase text-neutral-800 border border-neutral-200">
             <Sparkles className="w-3.5 h-3.5 text-black" />
-            <span>New Season Drop • 2026 Collection</span>
+            <span>Est. 2020 • Signature Collection</span>
           </div>
 
           {/* Main Hero Headline */}

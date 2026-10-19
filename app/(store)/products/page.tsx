@@ -14,14 +14,14 @@ export const instant = false;
 export const metadata: Metadata = {
   title: "Explore Catalog | Streetwear & Accessories",
   description:
-    "Filter and browse through our complete collection of modern streetwear hoodies, graphic tees, fine jewelry, and everyday accessories at me2one.",
+    "Filter and browse through our complete collection of modern streetwear hoodies, graphic tees, fine jewelry, and everyday accessories at MartInn (KD Traders).",
   alternates: {
     canonical: "/products",
   },
   openGraph: {
-    title: "Explore Catalog | me2one Streetwear & Accessories",
+    title: "Explore Catalog | MartInn Streetwear & Accessories",
     description:
-      "Filter and browse through our complete collection of modern streetwear hoodies, graphic tees, fine jewelry, and everyday accessories at me2one.",
+      "Filter and browse through our complete collection of modern streetwear hoodies, graphic tees, fine jewelry, and everyday accessories at MartInn.",
   },
 };
 

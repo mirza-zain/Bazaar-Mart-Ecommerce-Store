@@ -11,12 +11,12 @@ const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://me2one.vercel.app";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "me2one | Modern Fashion, Streetwear & Jewelry",
-    template: "%s | me2one",
+    default: "MartInn | Modern Fashion, Streetwear & Jewelry (KD Traders)",
+    template: "%s | MartInn",
   },
   description:
-    "Explore modern streetwear hoodies, graphic tees, fine jewelry, and everyday accessories at me2one. Enjoy express delivery across Pakistan with Cash on Delivery and verified Bank Transfer.",
-  applicationName: "me2one",
+    "Explore modern streetwear hoodies, graphic tees, fine jewelry, and everyday accessories at MartInn (affiliated with KD Traders). Enjoy express delivery across Pakistan with Cash on Delivery and verified Bank Transfer.",
+  applicationName: "MartInn",
   alternates: {
     canonical: siteUrl,
   },
@@ -35,9 +35,10 @@ export const metadata: Metadata = {
     ],
   },
   keywords: [
-    "me2one",
-    "me2one clothing",
-    "me2one streetwear",
+    "MartInn",
+    "KD Traders",
+    "MartInn clothing",
+    "MartInn streetwear",
     "streetwear Pakistan",
     "online clothing Karachi",
     "hoodies Pakistan",
@@ -49,26 +50,26 @@ export const metadata: Metadata = {
     "cash on delivery clothing Pakistan",
     "fashion accessories",
   ],
-  authors: [{ name: "me2one Official", url: siteUrl }],
-  creator: "me2one",
-  publisher: "me2one",
+  authors: [{ name: "MartInn (KD Traders)", url: siteUrl }],
+  creator: "MartInn",
+  publisher: "MartInn",
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
   openGraph: {
-    title: "me2one | Modern Fashion, Streetwear & Jewelry",
+    title: "MartInn | Modern Fashion, Streetwear & Jewelry",
     description:
-      "Explore modern streetwear hoodies, graphic tees, fine jewelry, and accessories at me2one. Free express delivery over PKR 8,000 nationwide.",
+      "Explore modern streetwear hoodies, graphic tees, fine jewelry, and accessories at MartInn (KD Traders). Free express delivery over PKR 8,000 nationwide.",
     url: siteUrl,
-    siteName: "me2one",
+    siteName: "MartInn",
     images: [
       {
         url: "/icon-512x512.png",
         width: 512,
         height: 512,
-        alt: "me2one - Modern Fashion, Streetwear & Jewelry",
+        alt: "MartInn - Modern Fashion, Streetwear & Jewelry",
       },
     ],
     locale: "en_PK",
@@ -76,12 +77,12 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "me2one | Modern Fashion, Streetwear & Jewelry",
+    title: "MartInn | Modern Fashion, Streetwear & Jewelry",
     description:
-      "Discover high-quality streetwear, fine jewelry, and everyday accessories at me2one.",
+      "Discover high-quality streetwear, fine jewelry, and everyday accessories at MartInn (KD Traders).",
     images: ["/icon-512x512.png"],
-    creator: "@me2one",
-    site: "@me2one",
+    creator: "@MartInn",
+    site: "@MartInn",
   },
   robots: {
     index: true,
@@ -107,7 +108,7 @@ export default function RootLayout({
       {
         "@type": "Organization",
         "@id": `${siteUrl}/#organization`,
-        name: "me2one",
+        name: "MartInn (KD Traders)",
         url: siteUrl,
         logo: {
           "@type": "ImageObject",
@@ -131,8 +132,8 @@ export default function RootLayout({
         "@type": "WebSite",
         "@id": `${siteUrl}/#website`,
         url: siteUrl,
-        name: "me2one",
-        description: "Modern Fashion, Streetwear & Jewelry in Pakistan",
+        name: "MartInn",
+        description: "Modern Fashion, Streetwear & Jewelry in Pakistan - KD Traders",
         publisher: {
           "@id": `${siteUrl}/#organization`,
         },

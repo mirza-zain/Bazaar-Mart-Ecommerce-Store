@@ -108,9 +108,12 @@ export default function AdminLoginForm({
             <ShieldCheck className="w-7 h-7" />
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white font-[Gebuk]">
-            ME2ONE
+            MartInn
           </h1>
-          <p className="text-xs uppercase tracking-widest text-neutral-400 mt-1 font-semibold">
+          <span className="text-[10px] font-medium tracking-[0.2em] uppercase text-neutral-400 mt-1 block">
+            KD Traders
+          </span>
+          <p className="text-xs uppercase tracking-widest text-neutral-500 mt-2 font-semibold">
             Admin Console Login
           </p>
         </div>
@@ -227,7 +230,7 @@ export default function AdminLoginForm({
             className="inline-flex items-center gap-2 text-xs font-medium text-neutral-400 hover:text-white transition"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Return to me2one Store</span>
+            <span>Return to MartInn Store</span>
           </Link>
         </div>
       </div>

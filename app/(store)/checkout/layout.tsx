@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Secure Checkout",
   description:
-    "Complete your me2one order with Cash on Delivery or instant verified Bank Transfer.",
+    "Complete your MartInn order with Cash on Delivery or instant verified Bank Transfer.",
   robots: {
     index: false,
     follow: false,
