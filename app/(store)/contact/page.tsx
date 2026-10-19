@@ -27,7 +27,7 @@ const faqs = [
   {
     question: "What payment methods do you accept?",
     answer:
-      "We accept Cash on Delivery (COD) for deliveries in Karachi. For all other cities across Pakistan, we accept direct Bank Transfer (Meezan, HBL, Bank Alfalah, Nayapay, Sadapay) with instant verification upon uploading your transfer screenshot at checkout.",
+      "We accept Cash on Delivery (COD) for deliveries in Karachi. For all other cities across Pakistan, we accept direct Bank Transfer to our official Bank AL Habib merchant account (via EasyPaisa, JazzCash, SadaPay, Nayapay, or any 1Link bank) with instant verification upon uploading your transfer screenshot at checkout.",
   },
   {
     question: "What is your return and exchange policy?",
