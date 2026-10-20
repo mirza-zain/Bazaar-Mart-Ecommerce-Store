@@ -65,7 +65,7 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-neutral-400 text-sm max-w-sm leading-relaxed">
-              Modern streetwear, timeless jewelry, and everyday accessories designed for individuals who move with confidence.
+              Your trusted destination for smart living gadgets, home & kitchen utility, innovative toys, and everyday problem-solving essentials across Pakistan.
             </p>
 
             <div className="pt-2">
@@ -105,13 +105,13 @@ export default function Footer() {
                 <Link href="/products" className="hover:text-white transition">All Products</Link>
               </li>
               <li>
-                <Link href="/products?category=Clothing" className="hover:text-white transition">Clothing</Link>
+                <Link href="/products?category=Accessories" className="hover:text-white transition">Smart Gadgets</Link>
               </li>
               <li>
-                <Link href="/products?category=Jewelry" className="hover:text-white transition">Jewelry & Chains</Link>
+                <Link href="/products?category=Accessories" className="hover:text-white transition">Home & Kitchen</Link>
               </li>
               <li>
-                <Link href="/products?category=Accessories" className="hover:text-white transition">Accessories</Link>
+                <Link href="/products" className="hover:text-white transition">Daily Problem Solvers</Link>
               </li>
             </ul>
           </div>

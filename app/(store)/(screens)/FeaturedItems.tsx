@@ -8,10 +8,10 @@ export default function FeaturedItems() {
       <div className="w-full flex items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold uppercase tracking-tight text-neutral-900">
-            Featured Drops
+            Trending Products
           </h2>
           <p className="text-xs sm:text-sm text-neutral-500 mt-1">
-            Hand-picked pieces from our newest collection
+            Top-selling smart gadgets, home utility & everyday problem solvers
           </p>
         </div>
         <Link

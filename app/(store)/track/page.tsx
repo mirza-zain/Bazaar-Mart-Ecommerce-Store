@@ -351,7 +351,7 @@ function TrackOrderContent() {
                               <span className="text-xs text-neutral-500">Qty: {it.quantity}</span>
                               {it.variant && (
                                 <span className="text-[11px] font-medium bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded border border-neutral-200">
-                                  Size: {it.variant}
+                                  Option: {it.variant}
                                 </span>
                               )}
                             </div>

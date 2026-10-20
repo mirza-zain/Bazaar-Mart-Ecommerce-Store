@@ -12,11 +12,11 @@ const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://me2one.vercel.app";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "MartInn | Modern Fashion, Streetwear & Jewelry (KD Traders)",
+    default: "MartInn | Smart Gadgets, Home Utility & Trending Essentials (KD Traders)",
     template: "%s | MartInn",
   },
   description:
-    "Explore modern streetwear hoodies, graphic tees, fine jewelry, and everyday accessories at MartInn (affiliated with KD Traders). Enjoy express delivery across Pakistan with Cash on Delivery and verified Bank Transfer.",
+    "Explore trending smart gadgets, kitchen & home utility, innovative toys, and everyday essentials at MartInn (affiliated with KD Traders). Enjoy express delivery across Pakistan with Cash on Delivery and verified Bank Transfer.",
   applicationName: "MartInn",
   alternates: {
     canonical: siteUrl,
@@ -38,18 +38,16 @@ export const metadata: Metadata = {
   keywords: [
     "MartInn",
     "KD Traders",
-    "MartInn clothing",
-    "MartInn streetwear",
-    "streetwear Pakistan",
-    "online clothing Karachi",
-    "hoodies Pakistan",
-    "oversized hoodies",
-    "graphic tees Pakistan",
-    "fine jewelry Pakistan",
-    "cuban chains Karachi",
-    "streetwear fashion brand",
-    "cash on delivery clothing Pakistan",
-    "fashion accessories",
+    "smart gadgets Pakistan",
+    "home utility products",
+    "kitchen gadgets Karachi",
+    "trending gadgets Pakistan",
+    "problem solving products",
+    "online shopping Karachi",
+    "cash on delivery gadgets",
+    "innovative toys Pakistan",
+    "everyday essentials",
+    "convenience products Pakistan",
   ],
   authors: [{ name: "MartInn (KD Traders)", url: siteUrl }],
   creator: "MartInn",
@@ -60,9 +58,9 @@ export const metadata: Metadata = {
     telephone: false,
   },
   openGraph: {
-    title: "MartInn | Modern Fashion, Streetwear & Jewelry",
+    title: "MartInn | Smart Gadgets, Home Utility & Trending Essentials",
     description:
-      "Explore modern streetwear hoodies, graphic tees, fine jewelry, and accessories at MartInn (KD Traders). Free express delivery over PKR 8,000 nationwide.",
+      "Explore trending smart gadgets, home & kitchen utility, innovative toys, and lifestyle essentials at MartInn (KD Traders). Free express delivery over PKR 8,000 nationwide.",
     url: siteUrl,
     siteName: "MartInn",
     images: [
@@ -70,7 +68,7 @@ export const metadata: Metadata = {
         url: "/icon-512x512.png",
         width: 512,
         height: 512,
-        alt: "MartInn - Modern Fashion, Streetwear & Jewelry",
+        alt: "MartInn - Smart Gadgets, Home Utility & Trending Essentials",
       },
     ],
     locale: "en_PK",
@@ -78,9 +76,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "MartInn | Modern Fashion, Streetwear & Jewelry",
+    title: "MartInn | Smart Gadgets, Home Utility & Trending Essentials",
     description:
-      "Discover high-quality streetwear, fine jewelry, and everyday accessories at MartInn (KD Traders).",
+      "Discover clever smart gadgets, home utility, innovative toys, and everyday essentials at MartInn (KD Traders).",
     images: ["/icon-512x512.png"],
     creator: "@MartInn",
     site: "@MartInn",
@@ -134,7 +132,7 @@ export default function RootLayout({
         "@id": `${siteUrl}/#website`,
         url: siteUrl,
         name: "MartInn",
-        description: "Modern Fashion, Streetwear & Jewelry in Pakistan - KD Traders",
+        description: "Smart Gadgets, Home Utility & Trending Lifestyle Essentials in Pakistan - KD Traders",
         publisher: {
           "@id": `${siteUrl}/#organization`,
         },

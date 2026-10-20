@@ -81,7 +81,7 @@ export default function ProductPurchaseActions({
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-xs font-semibold uppercase text-neutral-700">
-              Select Variant / Size
+              Select Option / Variant
             </label>
             {selectedVariant && (
               <span className="text-xs text-neutral-500 font-medium">

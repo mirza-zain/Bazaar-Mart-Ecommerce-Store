@@ -9,10 +9,10 @@ export default function BottomBanner() {
         {/* Text Content */}
         <div className="w-full md:w-1/2 flex flex-col items-start gap-4 sm:gap-6 text-left">
           <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-neutral-900 leading-tight">
-            Style That Moves With You
+            Clever Tools That Make Everyday Life Easier
           </h2>
           <p className="text-base sm:text-lg text-neutral-600 font-medium tracking-wide max-w-md">
-            Modern Fashion for a Brighter Tomorrow
+            Smart Gadgets & Home Innovations Delivered Across Pakistan
           </p>
           <Link
             href="/products"

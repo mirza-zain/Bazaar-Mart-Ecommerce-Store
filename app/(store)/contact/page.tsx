@@ -30,9 +30,9 @@ const faqs = [
       "We accept Cash on Delivery (COD) for deliveries in Karachi. For all other cities across Pakistan, we accept direct Bank Transfer to our official Bank AL Habib merchant account (via EasyPaisa, JazzCash, SadaPay, Nayapay, or any 1Link bank) with instant verification upon uploading your transfer screenshot at checkout.",
   },
   {
-    question: "What is your return and exchange policy?",
+    question: "What is your return and replacement policy?",
     answer:
-      "We offer a 30-day hassle-free return and exchange policy. Products must be unworn, undamaged, and returned with original tags intact. If you need a size exchange, contact our support team and we will coordinate courier pickup.",
+      "We offer a 7-day hassle-free replacement guarantee. If your product or gadget arrives damaged, defective, or not functioning as described, contact our support team on WhatsApp within 7 days and we will arrange a prompt replacement.",
   },
   {
     question: "How can I track my shipment?",
@@ -40,9 +40,9 @@ const faqs = [
       "You can track your order anytime on our dedicated tracking page at /track. Simply enter your Order ID (e.g. #ORD-0001) or the email address used during checkout to view live status updates and courier dispatch details.",
   },
   {
-    question: "How do I know my size before ordering?",
+    question: "Are electronic gadgets and utility tools tested before dispatch?",
     answer:
-      "Our streetwear hoodies and tees follow modern relaxed / slightly oversized silhouettes. Check the variant specifications on each product page or reach out to us on WhatsApp with your height and weight for quick sizing advice.",
+      "Yes, all gadgets, electronic devices, and utility tools are inspected and securely packaged prior to courier dispatch to ensure they arrive in 100% working condition.",
   },
 ];
 

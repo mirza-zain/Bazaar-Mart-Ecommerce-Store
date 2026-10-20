@@ -30,6 +30,16 @@ interface ShopFilterViewProps {
   initialSearch?: string;
 }
 
+export function formatSubCategoryLabel(sub: string): string {
+  if (!sub) return "";
+  let clean = sub.replace(/[?]/g, "").trim();
+  clean = clean.replace(/\baan\b/gi, "&").replace(/\band\b/gi, "&");
+  return clean
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 export default function ShopFilterView({
   initialProducts,
   initialCategory = "all",
@@ -345,7 +355,7 @@ export default function ShopFilterView({
                       : "text-neutral-600 hover:bg-neutral-100"
                   }`}
                 >
-                  <span className="truncate">{sub}</span>
+                  <span className="truncate">{formatSubCategoryLabel(sub)}</span>
                 </button>
               );
             })}
@@ -614,7 +624,7 @@ export default function ShopFilterView({
 
                 {selectedSubCategory !== "all" && (
                   <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 bg-neutral-100 rounded-lg text-neutral-800 border border-neutral-200">
-                    <span>{selectedSubCategory}</span>
+                    <span>{formatSubCategoryLabel(selectedSubCategory)}</span>
                     <X
                       className="w-3 h-3 cursor-pointer hover:text-black"
                       onClick={() => setSelectedSubCategory("all")}
@@ -700,7 +710,7 @@ export default function ShopFilterView({
                         alt={item.name}
                         fill
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                        className="object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                        className="object-cover object-center group-hover:scale-105 transition-transform duration-300"
                       />
 
                       {/* Stock Badge */}
@@ -728,7 +738,7 @@ export default function ShopFilterView({
                         {item.subCategory && (
                           <>
                             <span>•</span>
-                            <span>{item.subCategory}</span>
+                            <span>{formatSubCategoryLabel(item.subCategory)}</span>
                           </>
                         )}
                       </div>
@@ -738,7 +748,7 @@ export default function ShopFilterView({
                         </p>
                         {item.variants && item.variants.length > 0 && (
                           <span className="text-[11px] font-medium text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-md">
-                            {item.variants.length} sizes
+                            {item.variants.length} options
                           </span>
                         )}
                       </div>

@@ -1,23 +1,25 @@
-import { Gem, Glasses, Shirt } from "lucide-react";
+import { Cpu, Home, Sparkles } from "lucide-react";
 import Link from "next/link";
-
 
 export default function ScreenCategory() {
   const items = [
     {
       id: 1,
-      category: "Clothing",
-      icon: <Shirt className="w-6 h-6" />
+      category: "Smart Gadgets",
+      href: "/products?category=Accessories",
+      icon: <Cpu className="w-6 h-6" />
     },
     {
       id: 2,
-      category: "Jewelry",
-      icon: <Gem className="w-6 h-6" />
+      category: "Home & Kitchen",
+      href: "/products?category=Accessories",
+      icon: <Home className="w-6 h-6" />
     },
     {
       id: 3, 
-      category: "Accessories",
-      icon: <Glasses className="w-6 h-6" />
+      category: "Utility & Essentials",
+      href: "/products",
+      icon: <Sparkles className="w-6 h-6" />
     }
   ];
 
@@ -28,7 +30,7 @@ export default function ScreenCategory() {
         {items.map(item => (
           <Link
             key={item.id}
-            href={`/products?category=${item.category}`}
+            href={item.href}
             className="flex items-center justify-center gap-4 py-8 px-6 bg-slate-100 rounded-xl border border-slate-200 hover:bg-black hover:text-white transition-all duration-300 ease-in-out text-xl font-medium text-center"
           >
             {item.icon}

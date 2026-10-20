@@ -12,16 +12,16 @@ interface Props {
 export const instant = false;
 
 export const metadata: Metadata = {
-  title: "Explore Catalog | Streetwear & Accessories",
+  title: "Explore Catalog | Smart Gadgets, Home Utility & Trending Essentials",
   description:
-    "Filter and browse through our complete collection of modern streetwear hoodies, graphic tees, fine jewelry, and everyday accessories at MartInn (KD Traders).",
+    "Filter and browse through our complete collection of smart gadgets, home & kitchen utility, innovative toys, and everyday essentials at MartInn (KD Traders).",
   alternates: {
     canonical: "/products",
   },
   openGraph: {
-    title: "Explore Catalog | MartInn Streetwear & Accessories",
+    title: "Explore Catalog | MartInn Smart Gadgets & Utility Essentials",
     description:
-      "Filter and browse through our complete collection of modern streetwear hoodies, graphic tees, fine jewelry, and everyday accessories at MartInn.",
+      "Filter and browse through our complete collection of smart gadgets, home utility, innovative toys, and daily problem solvers at MartInn.",
   },
 };
 
@@ -52,7 +52,7 @@ export default async function ProductsCatalogPage({ searchParams }: Props) {
           Explore Catalog
         </h1>
         <p className="text-neutral-500 text-sm md:text-base mt-1">
-          Filter and browse through our complete collection of modern fashion, jewelry, and accessories.
+          Filter and browse through our complete collection of smart gadgets, home utility, and everyday essentials.
         </p>
       </div>
 
