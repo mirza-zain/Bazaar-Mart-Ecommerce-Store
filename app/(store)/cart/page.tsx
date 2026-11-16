@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Minus, Plus, ShoppingBag, Trash2, Truck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { useCart } from "@/app/context/CartContext";
 
 export default function CartPage() {
@@ -12,8 +12,6 @@ export default function CartPage() {
     isLoaded,
     subtotal,
     shippingFee,
-    freeShippingThreshold,
-    progressToFreeShipping,
     updateQuantity,
     removeItem,
   } = useCart();
@@ -33,11 +31,14 @@ export default function CartPage() {
         </Link>
       </div>
 
-      <div className="pb-8 border-b border-neutral-200">
-        <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tight text-neutral-900">
+      <div className="flex flex-col gap-2 border-b border-neutral-200 pb-8">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-neutral-400">
+          Review &amp; checkout
+        </p>
+        <h1 className="text-4xl font-bold uppercase tracking-tight text-neutral-900 md:text-5xl">
           Shopping Bag
         </h1>
-        <p className="text-neutral-500 text-sm md:text-base mt-1">
+        <p className="text-sm text-neutral-500 md:text-base">
           Review your chosen items, apply discount codes, and proceed to checkout.
         </p>
       </div>
@@ -51,8 +52,8 @@ export default function CartPage() {
         <div className="py-24 text-center bg-neutral-50 rounded-3xl border border-dashed border-neutral-300 mt-10">
           <ShoppingBag className="w-12 h-12 text-neutral-400 mx-auto mb-3" />
           <h2 className="text-2xl font-bold text-neutral-900">Your bag is empty</h2>
-          <p className="text-sm text-neutral-500 mt-1 max-w-sm mx-auto">
-            Looks like you haven&apos;t added any streetwear or accessories to your bag yet.
+          <p className="mx-auto mt-1 max-w-sm text-sm text-neutral-500">
+            Looks like you haven&apos;t added any gadgets or essentials to your bag yet.
           </p>
           <Link
             href="/products"
@@ -65,24 +66,6 @@ export default function CartPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-10">
           {/* Items List */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Free Shipping Bar */}
-            <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200">
-              <div className="flex items-center gap-2 text-sm font-semibold text-neutral-900 mb-2">
-                <Truck className="w-4 h-4" />
-                <span>
-                  {subtotal >= freeShippingThreshold
-                    ? "🎉 You have qualified for FREE Shipping!"
-                    : `Add PKR ${(freeShippingThreshold - subtotal).toLocaleString()} more for FREE shipping!`}
-                </span>
-              </div>
-              <div className="w-full bg-neutral-200 h-2 rounded-full overflow-hidden">
-                <div
-                  className="bg-black h-full rounded-full transition-all duration-500"
-                  style={{ width: `${progressToFreeShipping}%` }}
-                />
-              </div>
-            </div>
-
             <div className="divide-y divide-neutral-200 border-t border-b border-neutral-200">
               {items.map((item) => (
                 <div key={item.id} className="py-6 flex gap-4 sm:gap-6 items-center">
@@ -158,7 +141,7 @@ export default function CartPage() {
           </div>
 
           {/* Order Summary */}
-          <div className="bg-neutral-50 p-6 sm:p-8 rounded-3xl border border-neutral-200 h-fit space-y-6">
+          <div className="h-fit space-y-6 rounded-3xl border border-neutral-200 bg-neutral-50 p-6 sm:p-8 lg:sticky lg:top-32">
             <h2 className="text-xl font-bold text-neutral-900 pb-4 border-b border-neutral-200">
               Order Summary
             </h2>
@@ -170,7 +153,7 @@ export default function CartPage() {
               </div>
               <div className="flex justify-between text-neutral-600">
                 <span>Estimated Delivery</span>
-                <span>{shippingFee === 0 ? "FREE" : `PKR ${shippingFee}`}</span>
+                <span>PKR {shippingFee.toLocaleString()}</span>
               </div>
               <div className="pt-3 border-t border-neutral-200 flex justify-between text-base font-bold text-neutral-900">
                 <span>Total</span>

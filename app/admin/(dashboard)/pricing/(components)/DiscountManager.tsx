@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Percent, Plus, Tag, Trash2, X, Zap } from "lucide-react";
+import { Percent, Plus, Tag, Trash2, Truck, X, Zap } from "lucide-react";
 import { DiscountCode } from "@/app/db/schema";
 import {
   createDiscountCodeAction,
@@ -108,11 +108,11 @@ export default function DiscountManager({ initialCodes }: Props) {
 
         <div className="p-5 bg-white rounded-2xl border border-neutral-200 shadow-xs flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <Check className="w-6 h-6" />
+            <Truck className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-neutral-500 uppercase">Free Shipping Rule</p>
-            <p className="text-2xl font-bold text-neutral-900 mt-0.5">PKR 8,000</p>
+            <p className="text-xs font-semibold text-neutral-500 uppercase">Delivery Rates</p>
+            <p className="mt-0.5 text-sm font-medium text-neutral-700">Managed in shipping rules</p>
           </div>
         </div>
 

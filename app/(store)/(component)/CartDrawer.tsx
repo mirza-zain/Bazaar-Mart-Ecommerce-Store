@@ -11,7 +11,6 @@ import {
   Minus,
   Plus,
   Trash2,
-  Truck,
   ShieldCheck,
 } from "lucide-react";
 import { useCart } from "@/app/context/CartContext";
@@ -24,8 +23,6 @@ export default function CartDrawer() {
     totalItems,
     subtotal,
     shippingFee,
-    freeShippingThreshold,
-    progressToFreeShipping,
     isDrawerOpen,
     closeDrawer,
     updateQuantity,
@@ -80,7 +77,7 @@ export default function CartDrawer() {
 
       {/* Drawer Panel */}
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+        <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col">
           {/* Drawer Header */}
           <div className="p-5 border-b border-neutral-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -105,24 +102,6 @@ export default function CartDrawer() {
             </button>
           </div>
 
-          {/* Free Shipping Meter */}
-          <div className="px-5 py-3.5 bg-neutral-50 border-b border-neutral-200/80">
-            <div className="flex items-center gap-2 text-xs font-semibold text-neutral-800 mb-1.5">
-              <Truck className="w-3.5 h-3.5 text-black" />
-              <span>
-                {subtotal >= freeShippingThreshold
-                  ? "🎉 You unlocked FREE Express Shipping!"
-                  : `Add PKR ${(freeShippingThreshold - subtotal).toLocaleString()} more for FREE shipping`}
-              </span>
-            </div>
-            <div className="w-full bg-neutral-200 h-1.5 rounded-full overflow-hidden">
-              <div
-                className="bg-black h-full rounded-full transition-all duration-500"
-                style={{ width: `${progressToFreeShipping}%` }}
-              />
-            </div>
-          </div>
-
           {/* Items List Body */}
           <div className="flex-1 overflow-y-auto p-5 divide-y divide-neutral-100">
             {!isLoaded ? (
@@ -138,7 +117,7 @@ export default function CartDrawer() {
                 <div>
                   <h3 className="font-bold text-neutral-900 text-base">Your bag is empty</h3>
                   <p className="text-xs text-neutral-500 max-w-xs mx-auto mt-1">
-                    Explore our latest heavyweight hoodies, tees, and jewelry.
+                    Explore our latest smart gadgets, home utility and everyday essentials.
                   </p>
                 </div>
                 <button
@@ -250,7 +229,7 @@ export default function CartDrawer() {
                 <div className="flex justify-between">
                   <span>Shipping</span>
                   <span className="font-semibold text-neutral-900">
-                    {shippingFee === 0 ? "FREE" : `PKR ${shippingFee}`}
+                    PKR {shippingFee.toLocaleString()}
                   </span>
                 </div>
                 <div className="pt-2 border-t border-neutral-200 flex justify-between text-base font-bold text-neutral-900">

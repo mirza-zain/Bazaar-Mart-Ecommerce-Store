@@ -15,7 +15,6 @@ import {
   Truck,
   AlertCircle,
   XCircle,
-  Printer,
   MapPin,
   CreditCard,
   Building2,
@@ -161,12 +160,16 @@ function TrackOrderContent() {
         </Link>
       </div>
 
-      <div className="text-center pb-8 border-b border-neutral-200">
-        <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tight text-neutral-900">
+      <div className="border-b border-neutral-200 pb-8 text-center">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-neutral-400">
+          Live delivery updates
+        </p>
+        <h1 className="mt-1 text-4xl font-bold uppercase tracking-tight text-neutral-900 md:text-5xl">
           Track Your Order
         </h1>
-        <p className="text-neutral-500 text-sm md:text-base mt-2 max-w-md mx-auto">
-          Enter your unique Tracking Code (e.g. BAZ-4829) or checkout email to see live delivery status & courier updates.
+        <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500 md:text-base">
+          Enter your unique Tracking Code (e.g. BAZ-4829) or checkout email to see live delivery
+          status &amp; courier updates.
         </p>
       </div>
 

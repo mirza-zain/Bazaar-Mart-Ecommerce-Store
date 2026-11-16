@@ -5,8 +5,6 @@ import Link from "next/link";
 import {
   ArrowLeft,
   CheckCircle2,
-  Clock,
-  Mail,
   MapPin,
   MessageSquare,
   Phone,
@@ -87,12 +85,16 @@ export default function ContactPage() {
       </div>
 
       {/* Header */}
-      <div className="pb-8 border-b border-neutral-200">
-        <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tight text-neutral-900">
-          Contact & Support
+      <div className="border-b border-neutral-200 pb-8">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-neutral-400">
+          We are here to help
+        </p>
+        <h1 className="mt-1 text-4xl font-bold uppercase tracking-tight text-neutral-900 md:text-5xl">
+          Contact &amp; Support
         </h1>
-        <p className="text-neutral-500 text-sm md:text-base mt-2 max-w-xl">
-          Have questions about sizing, your active shipment, or wholesale inquiries? Our Karachi-based support team is here to assist you.
+        <p className="mt-2 max-w-xl text-sm text-neutral-500 md:text-base">
+          Have questions about a product, your active shipment, or wholesale inquiries? Our
+          Karachi-based support team is here to assist you.
         </p>
       </div>
 
@@ -230,7 +232,7 @@ export default function ContactPage() {
                   type="text"
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  placeholder="e.g. Sizing Advice or Order #ORD-0001"
+                  placeholder="e.g. Product question or Order #ORD-0001"
                   className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-hidden focus:border-black transition"
                 />
               </div>

@@ -2,7 +2,14 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Mail, MapPin, Phone, ShieldCheck, Truck } from "lucide-react";
+import {
+  ArrowUp,
+  Headset,
+  MapPin,
+  Phone,
+  ShieldCheck,
+  Truck,
+} from "lucide-react";
 
 export default function Footer() {
   const [subscribed, setSubscribed] = useState(false);
@@ -16,69 +23,85 @@ export default function Footer() {
       setTimeout(() => setSubscribed(false), 4000);
     }
   };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
-    <footer className="w-full bg-neutral-900 text-white rounded-3xl mt-16 overflow-hidden">
+    <footer className="mt-20 w-full border-t border-neutral-800 bg-neutral-950 text-white">
       {/* Top Value Proposition Bar */}
-      <div className="border-b border-neutral-800 py-8 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-6 text-center sm:text-left">
-          <div className="flex items-center justify-center sm:justify-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-neutral-800 flex items-center justify-center shrink-0">
-              <Truck className="w-5 h-5 text-white" />
+      <div className="border-b border-neutral-800/80">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-8 sm:grid-cols-3 sm:px-6 md:px-12">
+          <div className="flex items-center justify-center gap-4 sm:justify-start">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-800">
+              <Truck className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h4 className="font-semibold text-sm">Free Express Shipping</h4>
-              <p className="text-xs text-neutral-400 mt-0.5">On all orders over PKR 8,000</p>
+              <h4 className="text-sm font-semibold">Nationwide Delivery</h4>
+              <p className="mt-0.5 text-xs text-neutral-400">Delivered across Pakistan</p>
             </div>
           </div>
 
-          <div className="flex items-center justify-center sm:justify-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-neutral-800 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-5 h-5 text-white" />
+          <div className="flex items-center justify-center gap-4 sm:justify-start">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-800">
+              <ShieldCheck className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h4 className="font-semibold text-sm">100% Authentic Quality</h4>
-              <p className="text-xs text-neutral-400 mt-0.5">Guaranteed premium craftsmanship</p>
+              <h4 className="text-sm font-semibold">100% Authentic Quality</h4>
+              <p className="mt-0.5 text-xs text-neutral-400">Guaranteed premium craftsmanship</p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center gap-4 sm:justify-start">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-800">
+              <Headset className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold">Dedicated Support</h4>
+              <p className="mt-0.5 text-xs text-neutral-400">We are here to help you</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Footer Links */}
-      <div className="max-w-7xl mx-auto px-6 md:px-12 py-12 md:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 md:px-12 md:py-16">
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-5">
           {/* Brand Info & Newsletter */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="space-y-5 sm:col-span-2">
             <div className="flex flex-col items-start leading-none">
               <h3 className="text-3xl font-bold tracking-tight text-white">MartInn</h3>
-              <span className="text-[10px] font-medium tracking-[0.2em] uppercase text-neutral-400 mt-1.5">
+              <span className="mt-1.5 text-[10px] font-medium uppercase tracking-[0.22em] text-neutral-400">
                 KD Traders
               </span>
             </div>
-            <p className="text-neutral-400 text-sm max-w-sm leading-relaxed">
-              Your trusted destination for smart living gadgets, home & kitchen utility, innovative toys, and everyday problem-solving essentials across Pakistan.
+            <p className="max-w-sm text-sm leading-relaxed text-neutral-400">
+              Your trusted destination for smart living gadgets, home &amp; kitchen utility,
+              innovative toys, and everyday problem-solving essentials across Pakistan.
             </p>
 
-            <div className="pt-2">
-              <p className="text-xs font-semibold uppercase tracking-wider text-neutral-300 mb-2">
+            <div className="pt-1">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-300">
                 Join our VIP Club
               </p>
               {subscribed ? (
-                <div className="p-3 bg-neutral-800 border border-neutral-700 rounded-xl text-xs text-emerald-400 font-medium">
+                <div className="max-w-md rounded-xl border border-neutral-700 bg-neutral-800 p-3 text-xs font-medium text-emerald-400">
                   ✓ Thank you for subscribing to MartInn VIP Club!
                 </div>
               ) : (
-                <form onSubmit={handleSubscribe} className="flex gap-2 max-w-md">
+                <form onSubmit={handleSubscribe} className="flex max-w-md gap-2">
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email address"
-                    className="flex-1 px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-xl text-sm text-white placeholder-neutral-500 focus:outline-hidden focus:border-white transition"
+                    className="min-w-0 flex-1 rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-2.5 text-sm text-white placeholder-neutral-500 transition focus:border-white focus:outline-hidden"
                   />
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-white text-black font-semibold text-sm rounded-xl hover:bg-neutral-200 transition shrink-0 cursor-pointer"
+                    className="shrink-0 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-neutral-200 cursor-pointer"
                   >
                     Join
                   </button>
@@ -87,54 +110,92 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Column 1: Shop */}
+          {/* Shop Catalog */}
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-neutral-300">Shop Catalog</h4>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-neutral-300">
+              Shop Catalog
+            </h4>
             <ul className="space-y-2.5 text-sm text-neutral-400">
               <li>
-                <Link href="/products" className="hover:text-white transition">All Products</Link>
+                <Link href="/products" className="transition hover:text-white">
+                  All Products
+                </Link>
               </li>
               <li>
-                <Link href="/products?category=Accessories" className="hover:text-white transition">Smart Gadgets</Link>
+                <Link
+                  href="/products?category=Accessories"
+                  className="transition hover:text-white"
+                >
+                  Smart Gadgets
+                </Link>
               </li>
               <li>
-                <Link href="/products?category=Accessories" className="hover:text-white transition">Home & Kitchen</Link>
+                <Link href="/products" className="transition hover:text-white">
+                  Home &amp; Kitchen
+                </Link>
               </li>
               <li>
-                <Link href="/products" className="hover:text-white transition">Daily Problem Solvers</Link>
+                <Link href="/products" className="transition hover:text-white">
+                  Daily Problem Solvers
+                </Link>
               </li>
             </ul>
           </div>
 
-          {/* Column 2: Customer Support */}
+          {/* Customer Support */}
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-neutral-300">Customer Support</h4>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-neutral-300">
+              Customer Support
+            </h4>
             <ul className="space-y-2.5 text-sm text-neutral-400">
               <li>
-                <Link href="/track" className="hover:text-white transition">Track Your Order</Link>
+                <Link href="/track" className="transition hover:text-white">
+                  Track Your Order
+                </Link>
               </li>
               <li>
-                <Link href="/contact" className="hover:text-white transition">Contact Us</Link>
+                <Link href="/contact" className="transition hover:text-white">
+                  Contact Us
+                </Link>
               </li>
               <li>
-                <Link href="/contact" className="hover:text-white transition">Shipping & Delivery</Link>
+                <Link href="/contact" className="transition hover:text-white">
+                  Shipping &amp; Delivery
+                </Link>
+              </li>
+              <li>
+                <Link href="/products" className="transition hover:text-white">
+                  Browse Catalog
+                </Link>
               </li>
             </ul>
           </div>
 
-          {/* Column 3: Contact Details & Admin */}
+          {/* Contact Details */}
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-neutral-300">Get in Touch</h4>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-neutral-300">
+              Get in Touch
+            </h4>
             <ul className="space-y-2.5 text-sm text-neutral-400">
               <li className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
-                <a href="tel:+923332244373" className="hover:text-white transition font-mono">
+                <Phone className="h-4 w-4 shrink-0 text-emerald-400" />
+                <a href="tel:+923332244373" className="font-mono transition hover:text-white">
                   +92 333 2244373
                 </a>
               </li>
               <li className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-neutral-400 shrink-0" />
+                <MapPin className="h-4 w-4 shrink-0 text-neutral-400" />
                 <span>Karachi, Pakistan</span>
+              </li>
+              <li className="pt-1">
+                <button
+                  type="button"
+                  onClick={scrollToTop}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-neutral-700 px-3.5 py-1.5 text-xs font-semibold text-neutral-300 transition hover:border-neutral-500 hover:text-white cursor-pointer"
+                >
+                  <ArrowUp className="h-3.5 w-3.5" />
+                  <span>Back to top</span>
+                </button>
               </li>
             </ul>
           </div>
@@ -142,21 +203,19 @@ export default function Footer() {
       </div>
 
       {/* Bottom Legal & Payment Bar */}
-      <div className="border-t border-neutral-800 py-6 px-6 md:px-12 text-xs text-neutral-400">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="border-t border-neutral-800 px-4 py-6 text-xs text-neutral-400 sm:px-6 md:px-12">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
           <p>© 2020 MartInn. All rights reserved.</p>
-          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-3 text-neutral-300 font-medium">
-            <span>Cash on Delivery</span>
-            <span>•</span>
-            <span>Visa</span>
-            <span>•</span>
-            <span>Mastercard</span>
-            <span>•</span>
-            <span>JazzCash / EasyPaisa</span>
+          <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-medium text-neutral-300 sm:justify-end sm:gap-3">
+            <span className="rounded-full border border-neutral-800 px-3 py-1">Cash on Delivery</span>
+            <span className="rounded-full border border-neutral-800 px-3 py-1">Visa</span>
+            <span className="rounded-full border border-neutral-800 px-3 py-1">Mastercard</span>
+            <span className="rounded-full border border-neutral-800 px-3 py-1">
+              JazzCash / EasyPaisa
+            </span>
           </div>
         </div>
       </div>
     </footer>
   );
 }
-

@@ -10,34 +10,22 @@ import {
   X,
   ArrowUpDown,
   Check,
-  CheckCircle2,
-  AlertTriangle,
   RotateCcw,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   Layers,
   Tag,
   DollarSign,
   Package,
 } from "lucide-react";
 import { Product } from "@/app/db/schema";
+import { formatSubCategoryLabel } from "@/app/lib/format";
 
 interface ShopFilterViewProps {
   initialProducts: Product[];
   initialCategory?: string;
   initialSubCategory?: string;
   initialSearch?: string;
-}
-
-export function formatSubCategoryLabel(sub: string): string {
-  if (!sub) return "";
-  let clean = sub.replace(/[?]/g, "").trim();
-  clean = clean.replace(/\baan\b/gi, "&").replace(/\band\b/gi, "&");
-  return clean
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
 }
 
 export default function ShopFilterView({
@@ -431,7 +419,7 @@ export default function ShopFilterView({
   return (
     <div ref={catalogTopRef} className="w-full space-y-6">
       {/* Top Search & Action Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-neutral-50 p-4 rounded-2xl border border-neutral-200/80">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-neutral-50 p-3 sm:p-4 rounded-2xl border border-neutral-200/80">
         {/* Search Input */}
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -513,7 +501,7 @@ export default function ShopFilterView({
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         {/* Desktop Side Menu Filter Panel */}
         {isSidebarOpen && (
-          <aside className="hidden md:block w-72 shrink-0 bg-white p-5 rounded-3xl border border-neutral-200/80 shadow-xs sticky top-24 transition-all duration-200">
+          <aside className="hidden md:block w-72 shrink-0 bg-white p-5 rounded-3xl border border-neutral-200/80 shadow-xs sticky top-32 transition-all duration-200">
             <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
               <span className="font-bold text-sm text-neutral-900">Filters</span>
               {activeFiltersCount > 0 && (
@@ -687,9 +675,9 @@ export default function ShopFilterView({
             </div>
           ) : (
             <div
-              className={`grid grid-cols-1 sm:grid-cols-2 ${
+              className={`grid grid-cols-2 ${
                 isSidebarOpen ? "lg:grid-cols-3" : "md:grid-cols-3 lg:grid-cols-4"
-              } gap-6`}
+              } gap-4 sm:gap-6`}
             >
               {paginatedProducts.map((item) => {
                 const stockNum = Number(item.stock);
@@ -730,20 +718,20 @@ export default function ShopFilterView({
 
                     {/* Details */}
                     <div>
-                      <h3 className="text-base font-semibold text-neutral-900 group-hover:text-neutral-600 transition truncate">
+                      <h3 className="truncate text-sm font-semibold text-neutral-900 transition group-hover:text-neutral-600 sm:text-base">
                         {item.name}
                       </h3>
-                      <div className="flex items-center gap-1.5 text-xs text-neutral-400 uppercase mt-0.5">
-                        <span>{item.category}</span>
+                      <div className="mt-0.5 flex items-center gap-1.5 truncate text-[10px] uppercase tracking-wide text-neutral-400 sm:text-xs">
+                        <span className="truncate">{item.category}</span>
                         {item.subCategory && (
                           <>
                             <span>•</span>
-                            <span>{formatSubCategoryLabel(item.subCategory)}</span>
+                            <span className="truncate">{formatSubCategoryLabel(item.subCategory)}</span>
                           </>
                         )}
                       </div>
-                      <div className="flex items-center justify-between mt-1.5">
-                        <p className="font-bold text-neutral-900 text-base">
+                      <div className="flex items-center justify-between mt-1.5 gap-2">
+                        <p className="font-bold text-neutral-900 text-sm sm:text-base">
                           PKR {Number(item.price).toLocaleString()}
                         </p>
                         {item.variants && item.variants.length > 0 && (

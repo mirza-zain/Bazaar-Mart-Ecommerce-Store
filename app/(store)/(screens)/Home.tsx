@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, Sparkles, ShieldCheck, Truck } from "lucide-react";
+import { ArrowRight, ArrowUpRight, ShieldCheck, Sparkles, Truck } from "lucide-react";
 import ScreenCategory from "./ScreenCategory";
 import SupportBanner from "./SupportBanner";
 import FeaturedItems from "./FeaturedItems";
@@ -40,133 +40,135 @@ export default function HomePage() {
 
   return (
     <>
-      {/* Modern Lifestyle & Gadgets Hero Section */}
-      <section className="relative w-full max-w-7xl mx-auto px-5 md:px-12 pt-6 pb-12 sm:pt-10 sm:pb-16 overflow-hidden">
-        {/* Hero Top Content */}
-        <div className="flex flex-col items-center text-center max-w-3xl mx-auto space-y-6">
-          {/* Eyebrow Pill */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-neutral-100 rounded-full text-xs font-semibold tracking-wider uppercase text-neutral-800 border border-neutral-200">
-            <Sparkles className="w-3.5 h-3.5 text-black" />
-            <span>Est. 2020 • Trending Gadgets & Utility Mart</span>
-          </div>
+      {/* Hero Section */}
+      <section className="relative w-full overflow-hidden border-b border-neutral-100">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_0%,#f5f5f5_0%,#ffffff_70%)]"
+        />
 
-          {/* Main Hero Headline */}
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold uppercase tracking-tight text-neutral-900 leading-[0.95]">
-            Smart Living <br className="hidden sm:inline" />
-            <span className="text-neutral-500 font-normal">& Daily </span>
-            Essentials
-          </h1>
-
-          {/* Hero Subtitle */}
-          <p className="text-neutral-600 text-sm sm:text-base md:text-lg max-w-xl font-normal leading-relaxed">
-            Discover clever smart gadgets, home & kitchen utility, innovative toys, and everyday problem-solving essentials crafted for effortless convenience across Pakistan.
-          </p>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 w-full sm:w-auto">
-            <Link
-              href="/products"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-black text-white font-semibold text-sm sm:text-base rounded-2xl hover:bg-neutral-800 transition shadow-sm cursor-pointer"
-            >
-              <span>Explore All Products</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-
-            <Link
-              href="/products?category=Accessories"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-neutral-100 text-neutral-900 font-semibold text-sm sm:text-base rounded-2xl hover:bg-neutral-200 transition cursor-pointer"
-            >
-              <span>Trending Gadgets & Tools</span>
-            </Link>
-          </div>
-
-          {/* Trust Guarantees */}
-          <div className="flex flex-wrap items-center justify-center gap-6 pt-3 text-xs text-neutral-500 font-medium">
-            <div className="flex items-center gap-1.5">
-              <Truck className="w-4 h-4 text-black shrink-0" />
-              <span>Nationwide Express Delivery</span>
+        <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-10 sm:px-6 sm:pb-16 sm:pt-14 lg:px-8 lg:pt-16">
+          <div className="mx-auto flex max-w-3xl flex-col items-center space-y-6 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-700 shadow-xs">
+              <Sparkles className="h-3.5 w-3.5 text-black" />
+              <span>Est. 2020 • Smart Living Essentials</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-black shrink-0" />
-              <span>Cash on Delivery Available</span>
+
+            <h1 className="text-4xl font-extrabold uppercase leading-[0.95] tracking-tight text-neutral-900 sm:text-6xl md:text-7xl">
+              Smart Living
+              <br className="hidden sm:block" />
+              <span className="font-normal text-neutral-400"> &amp; Daily Essentials</span>
+            </h1>
+
+            <p className="max-w-xl text-sm font-normal leading-relaxed text-neutral-600 sm:text-base md:text-lg">
+              Discover clever smart gadgets, home &amp; kitchen utility, innovative toys, and
+              everyday problem-solving essentials crafted for effortless convenience across
+              Pakistan.
+            </p>
+
+            <div className="flex w-full flex-col items-center gap-3 pt-1 sm:w-auto sm:flex-row">
+              <Link
+                href="/products"
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-black px-8 py-4 text-sm font-semibold text-white shadow-sm transition hover:bg-neutral-800 sm:w-auto sm:text-base"
+              >
+                <span>Explore All Products</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+
+              <Link
+                href="/products?category=Accessories"
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-8 py-4 text-sm font-semibold text-neutral-900 transition hover:border-neutral-300 hover:bg-neutral-50 sm:w-auto sm:text-base"
+              >
+                <span>Trending Gadgets &amp; Tools</span>
+              </Link>
             </div>
-          </div>
-        </div>
 
-        {/* Editorial 4-Card Showcase Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-12 sm:mt-16">
-          {editorialCollections.map((col, idx) => (
-            <Link
-              key={idx}
-              href={col.href}
-              className="group relative aspect-3/4 rounded-3xl overflow-hidden bg-neutral-100 border border-neutral-200/80 shadow-xs block"
-            >
-              <Image
-                src={col.image}
-                alt={col.title}
-                fill
-                priority={idx < 2}
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
-              />
-
-              {/* Gradient Scrim */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
-
-              {/* Tag Pill */}
-              <div className="absolute top-4 left-4">
-                <span className="px-2.5 py-1 bg-white/90 backdrop-blur-xs text-black text-[11px] font-bold uppercase rounded-lg shadow-xs">
-                  {col.tag}
-                </span>
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-2 text-xs font-medium text-neutral-500">
+              <div className="flex items-center gap-1.5">
+                <Truck className="h-4 w-4 shrink-0 text-black" />
+                <span>Nationwide Express Delivery</span>
               </div>
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="h-4 w-4 shrink-0 text-black" />
+                <span>Cash on Delivery Available</span>
+              </div>
+            </div>
+          </div>
 
-              {/* Card Footer Content */}
-              <div className="absolute inset-x-4 bottom-4 flex items-end justify-between">
-                <div>
-                  <h3 className="text-white text-lg font-bold leading-tight group-hover:underline">
-                    {col.title}
-                  </h3>
-                  <p className="text-neutral-300 text-xs mt-0.5">{col.subtitle}</p>
+          {/* Editorial Showcase Grid */}
+          <div className="mt-12 grid grid-cols-2 gap-3 sm:mt-16 sm:gap-5 lg:grid-cols-4">
+            {editorialCollections.map((col, idx) => (
+              <Link
+                key={idx}
+                href={col.href}
+                className="group relative block aspect-[4/5] overflow-hidden rounded-2xl border border-neutral-200/80 bg-neutral-100 shadow-sm ring-1 ring-black/5 sm:rounded-3xl sm:aspect-[3/4]"
+              >
+                <Image
+                  src={col.image}
+                  alt={col.title}
+                  fill
+                  priority={idx < 2}
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
+                  className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                />
+
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+
+                <div className="absolute left-3 top-3 sm:left-4 sm:top-4">
+                  <span className="rounded-lg bg-white/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-black shadow-xs backdrop-blur-xs sm:px-2.5 sm:py-1 sm:text-[10px]">
+                    {col.tag}
+                  </span>
                 </div>
 
-                <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-xs text-white flex items-center justify-center group-hover:bg-white group-hover:text-black transition shrink-0">
-                  <ArrowUpRight className="w-4 h-4" />
+                <div className="absolute inset-x-3 bottom-3 flex items-end justify-between gap-2 sm:inset-x-4 sm:bottom-4">
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-bold leading-tight text-white group-hover:underline sm:text-lg">
+                      {col.title}
+                    </h3>
+                    <p className="mt-0.5 text-[10px] text-neutral-300 sm:text-xs">
+                      {col.subtitle}
+                    </p>
+                  </div>
+
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-xs transition group-hover:bg-white group-hover:text-black sm:h-9 sm:w-9">
+                    <ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Sleek Marquee Brand Ticker */}
-      <div className="w-full bg-black text-white py-3.5 overflow-hidden border-y border-neutral-800">
-        <div className="flex w-max animate-scroll-left gap-8 text-xs sm:text-sm font-bold uppercase tracking-widest">
-          <div className="flex items-center gap-8 shrink-0">
+      {/* Marquee Brand Ticker */}
+      <div className="w-full overflow-hidden border-y border-neutral-800 bg-black py-3 text-white">
+        <div className="animate-scroll-left flex w-max gap-8 text-[11px] font-bold uppercase tracking-widest sm:text-xs">
+          <div className="flex shrink-0 items-center gap-8">
             <span>Nationwide Express Delivery</span>
             <span>•</span>
             <span>Cash on Delivery Across Pakistan</span>
             <span>•</span>
-            <span>Smart Living & Tech Innovations</span>
+            <span>Smart Living &amp; Tech Innovations</span>
             <span>•</span>
-            <span>Home & Kitchen Problem Solvers</span>
+            <span>Home &amp; Kitchen Problem Solvers</span>
             <span>•</span>
             <span>Quality Inspected Before Dispatch</span>
             <span>•</span>
-            <span>Verified Bank Transfer & COD</span>
+            <span>Verified Bank Transfer &amp; COD</span>
             <span>•</span>
           </div>
-          <div className="flex items-center gap-8 shrink-0">
+          <div className="flex shrink-0 items-center gap-8">
             <span>Nationwide Express Delivery</span>
             <span>•</span>
             <span>Cash on Delivery Across Pakistan</span>
             <span>•</span>
-            <span>Smart Living & Tech Innovations</span>
+            <span>Smart Living &amp; Tech Innovations</span>
             <span>•</span>
-            <span>Home & Kitchen Problem Solvers</span>
+            <span>Home &amp; Kitchen Problem Solvers</span>
             <span>•</span>
             <span>Quality Inspected Before Dispatch</span>
             <span>•</span>
-            <span>Verified Bank Transfer & COD</span>
+            <span>Verified Bank Transfer &amp; COD</span>
             <span>•</span>
           </div>
         </div>

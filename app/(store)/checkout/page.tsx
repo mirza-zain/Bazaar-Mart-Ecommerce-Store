@@ -10,10 +10,7 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
-  Clock,
   Copy,
-  CreditCard,
-  FileText,
   Lock,
   Package,
   ShieldCheck,
@@ -586,11 +583,14 @@ export default function CheckoutPage() {
         </Link>
       </div>
 
-      <div className="pb-8 border-b border-neutral-200">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold uppercase tracking-tight text-neutral-900">
+      <div className="border-b border-neutral-200 pb-8">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-neutral-400">
+          Secure checkout
+        </p>
+        <h1 className="mt-1 text-3xl font-bold uppercase tracking-tight text-neutral-900 sm:text-4xl md:text-5xl">
           Checkout
         </h1>
-        <p className="text-neutral-500 text-sm md:text-base mt-1">
+        <p className="mt-1 text-sm text-neutral-500 md:text-base">
           Complete your delivery and payment details to confirm your order.
         </p>
       </div>
@@ -1193,7 +1193,7 @@ export default function CheckoutPage() {
         </div>
 
         {/* Right Sidebar: Order Summary (5 cols) */}
-        <div className="lg:col-span-5 space-y-6">
+        <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-32">
           <div className="bg-neutral-50 p-6 sm:p-8 rounded-3xl border border-neutral-200 space-y-6">
             <h2 className="text-lg font-bold text-neutral-900 pb-3 border-b border-neutral-200">
               Order Items ({items.length})
@@ -1286,20 +1286,14 @@ export default function CheckoutPage() {
               <div className="flex justify-between items-start text-neutral-600">
                 <div>
                   <span className="font-medium text-neutral-800">Shipping</span>
-                  {shippingCalculation.isFree ? (
-                    <span className="text-[11px] text-emerald-600 font-medium block">
-                      Free shipping qualified (&ge; PKR {shippingCalculation.freeThreshold.toLocaleString()})
-                    </span>
-                  ) : (
-                    <span className="text-[11px] text-neutral-400 block">
-                      {shippingCalculation.rateType === "city"
-                        ? `${shippingCalculation.matchedCity} express rate`
-                        : "Standard delivery rate"}
-                    </span>
-                  )}
+                  <span className="text-[11px] text-neutral-400 block">
+                    {shippingCalculation.rateType === "city"
+                      ? `${shippingCalculation.matchedCity} express rate`
+                      : "Standard delivery rate"}
+                  </span>
                 </div>
-                <span className={`font-semibold ${shippingFee === 0 ? "text-emerald-600" : "text-neutral-900"}`}>
-                  {shippingFee === 0 ? "FREE" : `PKR ${shippingFee.toLocaleString()}`}
+                <span className="font-semibold text-neutral-900">
+                  PKR {shippingFee.toLocaleString()}
                 </span>
               </div>
 

@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: siteUrl,
   },
-  manifest: "/manifest.webmanifest",
+  manifest: "/store.webmanifest",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "MartInn | Smart Gadgets, Home Utility & Trending Essentials",
     description:
-      "Explore trending smart gadgets, home & kitchen utility, innovative toys, and lifestyle essentials at MartInn (KD Traders). Free express delivery over PKR 8,000 nationwide.",
+      "Explore trending smart gadgets, home & kitchen utility, innovative toys, and lifestyle essentials at MartInn (KD Traders). Nationwide delivery across Pakistan with Cash on Delivery and verified Bank Transfer.",
     url: siteUrl,
     siteName: "MartInn",
     images: [
@@ -148,6 +148,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`h-full antialiased`}
     >
       <head>

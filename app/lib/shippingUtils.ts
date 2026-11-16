@@ -25,18 +25,18 @@ export function computeShippingFee(
     id: 0,
     city: "DEFAULT",
     charge: "250",
-    freeShippingThreshold: "8000",
+    freeShippingThreshold: "0",
     isDefault: true,
-    isActive: true,
+    isActive: false,
     createdAt: null,
   };
 
   const defaultFee = Number(defaultRule.charge) || 250;
-  const freeThreshold = Number(defaultRule.freeShippingThreshold) || 8000;
-  const isFreeActive = defaultRule.isActive ?? true;
+  const freeThreshold = Number(defaultRule.freeShippingThreshold) || 0;
+  const isFreeActive = defaultRule.isActive ?? false;
 
-  // Check if order qualifies for Free Shipping threshold
-  if (isFreeActive && subtotal >= freeThreshold) {
+  // Free shipping only applies when a threshold is configured for this rule.
+  if (isFreeActive && freeThreshold > 0 && subtotal >= freeThreshold) {
     return {
       fee: 0,
       isFree: true,

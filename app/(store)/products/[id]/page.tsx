@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowLeft, Check, ShieldCheck, Truck, Star } from "lucide-react";
+import { ShieldCheck, Truck, Star } from "lucide-react";
 import { getProductById } from "@/app/lib/actions/store";
 import { getProductReviews } from "@/app/lib/actions/reviews";
 import ProductPurchaseActions from "./(components)/ProductPurchaseActions";
@@ -106,20 +106,31 @@ export default async function ProductDetailPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
       />
-      {/* Back Link */}
-      <div className="mb-8">
-        <Link
-          href="/products"
-          className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-black transition"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Products</span>
+      {/* Breadcrumb */}
+      <nav className="mb-8 flex flex-wrap items-center gap-1.5 text-xs text-neutral-400 sm:text-sm">
+        <Link href="/" className="transition hover:text-black">
+          Home
         </Link>
-      </div>
+        <span>/</span>
+        <Link href="/products" className="transition hover:text-black">
+          Products
+        </Link>
+        <span>/</span>
+        <Link
+          href={`/products?category=${encodeURIComponent(product.category)}`}
+          className="transition hover:text-black"
+        >
+          {product.category}
+        </Link>
+        <span>/</span>
+        <span className="max-w-[200px] truncate font-medium text-neutral-700 sm:max-w-xs">
+          {product.name}
+        </span>
+      </nav>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16 items-start">
+      <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-2 lg:gap-16">
         {/* Product Image Gallery */}
-        <div className="relative aspect-square w-full rounded-3xl overflow-hidden bg-neutral-100 border border-neutral-200/80 shadow-xs">
+        <div className="relative aspect-square w-full overflow-hidden rounded-[2rem] border border-neutral-200/80 bg-neutral-100 shadow-sm">
           <Image
             src={product.image || "/images/img1.jpg"}
             alt={product.name}
@@ -127,25 +138,44 @@ export default async function ProductDetailPage({ params }: Props) {
             className="object-cover object-top"
             priority
           />
+          <div className="absolute left-4 top-4">
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold shadow-xs backdrop-blur-xs ${
+                inStock
+                  ? "bg-white/90 text-emerald-800"
+                  : "bg-white/90 text-rose-700"
+              }`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  inStock ? "bg-emerald-600" : "bg-rose-600"
+                }`}
+              />
+              {inStock ? "In Stock" : "Out of Stock"}
+            </span>
+          </div>
         </div>
 
         {/* Product Info & Purchase Form */}
         <div className="flex flex-col gap-6">
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-neutral-400 uppercase tracking-widest">
-              <span>{product.category}</span>
-              <span>•</span>
-              <span>{product.subCategory}</span>
+            <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+              <span className="rounded-full bg-neutral-100 px-2.5 py-1">{product.category}</span>
+              {product.subCategory && (
+                <span className="rounded-full bg-neutral-100 px-2.5 py-1">
+                  {product.subCategory}
+                </span>
+              )}
             </div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-neutral-900 mt-2">
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl md:text-5xl">
               {product.name}
             </h1>
-            <div className="flex items-center gap-2 mt-2.5">
+            <div className="mt-3 flex items-center gap-2">
               <div className="flex items-center gap-0.5">
                 {[1, 2, 3, 4, 5].map((s) => (
                   <Star
                     key={s}
-                    className={`w-4 h-4 ${
+                    className={`h-4 w-4 ${
                       s <= Math.round(reviewsSummary.averageRating)
                         ? "fill-amber-400 text-amber-400"
                         : "text-neutral-200"
@@ -161,7 +191,7 @@ export default async function ProductDetailPage({ params }: Props) {
                 {reviewsSummary.totalReviews === 1 ? "verified review" : "verified reviews"})
               </span>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-neutral-900 mt-3">
+            <p className="mt-4 text-3xl font-bold tracking-tight text-neutral-900">
               PKR {Number(product.price).toLocaleString()}
             </p>
           </div>
@@ -169,14 +199,14 @@ export default async function ProductDetailPage({ params }: Props) {
           {/* Stock Status Indicator */}
           <div className="flex items-center gap-2">
             <span
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
                 inStock
                   ? "bg-emerald-100 text-emerald-800"
                   : "bg-rose-100 text-rose-800"
               }`}
             >
               <span
-                className={`w-2 h-2 rounded-full ${
+                className={`h-2 w-2 rounded-full ${
                   inStock ? "bg-emerald-600" : "bg-rose-600"
                 }`}
               />
@@ -185,11 +215,9 @@ export default async function ProductDetailPage({ params }: Props) {
           </div>
 
           {/* Description */}
-          <div className="border-t border-b border-neutral-200 py-4">
-            <h3 className="text-sm font-semibold text-neutral-900 mb-1">About the product</h3>
-            <p className="text-sm text-neutral-600 leading-relaxed">
-              {product.description}
-            </p>
+          <div className="rounded-2xl border border-neutral-200/80 bg-neutral-50/60 p-5">
+            <h3 className="mb-1.5 text-sm font-semibold text-neutral-900">About the product</h3>
+            <p className="text-sm leading-relaxed text-neutral-600">{product.description}</p>
           </div>
 
           {/* Purchase Actions (Variant, Quantity, Add to Bag, Buy Now) */}
@@ -204,13 +232,13 @@ export default async function ProductDetailPage({ params }: Props) {
           />
 
           {/* Trust Guarantees */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-6 border-t border-neutral-100 text-xs text-neutral-600">
+          <div className="grid grid-cols-1 gap-3 rounded-2xl border border-neutral-200/70 bg-neutral-50/60 p-4 text-xs text-neutral-600 sm:grid-cols-2">
             <div className="flex items-center gap-2">
-              <Truck className="w-4 h-4 text-black shrink-0" />
-              <span>Free delivery over PKR 8,000</span>
+              <Truck className="h-4 w-4 shrink-0 text-black" />
+              <span>Delivery charges shown at checkout</span>
             </div>
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-black shrink-0" />
+              <ShieldCheck className="h-4 w-4 shrink-0 text-black" />
               <span>100% genuine product</span>
             </div>
           </div>
