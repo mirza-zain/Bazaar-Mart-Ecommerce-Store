@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from "@/app/lib/db";
+import { db, isDatabaseConfigured } from "@/app/lib/db";
 import { products, Product } from "@/app/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { ensureTablesExist } from "@/app/lib/actions/admin";
@@ -17,6 +17,7 @@ export type StoreFilterOptions = {
 export async function getStoreProducts(
   options?: StoreFilterOptions
 ): Promise<Product[]> {
+  if (!isDatabaseConfigured) return [];
   await connection();
   try {
     await ensureTablesExist();
@@ -73,6 +74,7 @@ export async function getStoreProducts(
 }
 
 export async function getProductById(id: number): Promise<Product | null> {
+  if (!isDatabaseConfigured) return null;
   await connection();
   try {
     await ensureTablesExist();
@@ -92,6 +94,7 @@ export type NavCategoryGroup = {
 };
 
 export async function getStoreNavCategoriesAction(): Promise<NavCategoryGroup[]> {
+  if (!isDatabaseConfigured) return [];
   try {
     await connection();
   } catch {}
@@ -122,11 +125,15 @@ export async function getStoreNavCategoriesAction(): Promise<NavCategoryGroup[]>
     }
 
     const navGroups: NavCategoryGroup[] = [];
-    for (const [catName, subSet] of catMap.entries()) {
-      const subCategories: { name: string; href: string }[] = Array.from(subSet).map((sub) => ({
-        name: sub,
-        href: `/products?category=${encodeURIComponent(catName)}&subCategory=${encodeURIComponent(sub)}`,
-      }));
+    const sortedCategories = Array.from(catMap.keys()).sort((a, b) => a.localeCompare(b));
+    for (const catName of sortedCategories) {
+      const subSet = catMap.get(catName)!;
+      const subCategories: { name: string; href: string }[] = Array.from(subSet)
+        .sort((a, b) => a.localeCompare(b))
+        .map((sub) => ({
+          name: sub,
+          href: `/products?category=${encodeURIComponent(catName)}&subCategory=${encodeURIComponent(sub)}`,
+        }));
 
       // Add "All {category}" entry
       subCategories.push({

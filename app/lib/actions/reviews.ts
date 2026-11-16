@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from "@/app/lib/db";
+import { db, isDatabaseConfigured } from "@/app/lib/db";
 import { reviews, orders, Review, OrderItem } from "@/app/db/schema";
 import { desc, eq, sql } from "drizzle-orm";
 import { ensureTablesExist } from "@/app/lib/actions/admin";
@@ -16,6 +16,15 @@ export type ProductReviewsSummary = {
 export async function getProductReviews(
   productId: number
 ): Promise<ProductReviewsSummary> {
+  if (!isDatabaseConfigured) {
+    return {
+      reviews: [],
+      totalReviews: 0,
+      averageRating: 5.0,
+      distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+    };
+  }
+
   try {
     await ensureTablesExist();
 

@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from "@/app/lib/db";
+import { db, isDatabaseConfigured } from "@/app/lib/db";
 import { shippingRules, ShippingRule } from "@/app/db/schema";
 import { ensureTablesExist, verifyAdminSession } from "@/app/lib/actions/admin";
 import { eq, desc, sql, asc } from "drizzle-orm";
@@ -11,6 +11,7 @@ import { connection } from "next/server";
  * Fetches all shipping rules from the database.
  */
 export async function getShippingRulesAction(): Promise<ShippingRule[]> {
+  if (!isDatabaseConfigured) return [];
   await connection();
   try {
     await ensureTablesExist();

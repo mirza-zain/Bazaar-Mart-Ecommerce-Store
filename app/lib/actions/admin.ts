@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from "@/app/lib/db";
+import { db, isDatabaseConfigured } from "@/app/lib/db";
 import { orders, products, discountCodes, Order, Product, ProductVariant, DiscountCode } from "@/app/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -15,6 +15,13 @@ let tablesEnsured = false;
 // Ensure tables exist on Neon if migrations haven't run yet
 export async function ensureTablesExist() {
   if (tablesEnsured) return;
+  // Without a connection string every statement below would fail; skip the
+  // bootstrap so local previews stay quiet. Queries still fail fast, and the
+  // storefront read actions fall back to empty results.
+  if (!isDatabaseConfigured) {
+    tablesEnsured = true;
+    return;
+  }
   try {
     await connection();
   } catch {}
