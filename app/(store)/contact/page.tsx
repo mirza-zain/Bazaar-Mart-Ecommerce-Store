@@ -30,11 +30,6 @@ const faqs = [
       "We accept Cash on Delivery (COD) for deliveries in Karachi. For all other cities across Pakistan, we accept direct Bank Transfer to our official Bank AL Habib merchant account (via EasyPaisa, JazzCash, SadaPay, Nayapay, or any 1Link bank) with instant verification upon uploading your transfer screenshot at checkout.",
   },
   {
-    question: "What is your return and replacement policy?",
-    answer:
-      "We offer a 7-day hassle-free replacement guarantee. If your product or gadget arrives damaged, defective, or not functioning as described, contact our support team on WhatsApp within 7 days and we will arrange a prompt replacement.",
-  },
-  {
     question: "How can I track my shipment?",
     answer:
       "You can track your order anytime on our dedicated tracking page at /track. Simply enter your Order ID (e.g. #ORD-0001) or the email address used during checkout to view live status updates and courier dispatch details.",
@@ -276,7 +271,7 @@ export default function ContactPage() {
           </h2>
         </div>
         <p className="text-sm text-neutral-500 mb-8 max-w-xl">
-          Quick answers to common questions regarding shipping schedules, payment security, and order returns.
+          Quick answers to common questions regarding shipping schedules, payment security, and order tracking.
         </p>
 
         <div className="space-y-3 max-w-4xl">

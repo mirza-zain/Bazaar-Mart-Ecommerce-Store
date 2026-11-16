@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowLeft, Check, ShieldCheck, Truck, RotateCcw, Star } from "lucide-react";
+import { ArrowLeft, Check, ShieldCheck, Truck, Star } from "lucide-react";
 import { getProductById } from "@/app/lib/actions/store";
 import { getProductReviews } from "@/app/lib/actions/reviews";
 import ProductPurchaseActions from "./(components)/ProductPurchaseActions";
@@ -204,14 +204,10 @@ export default async function ProductDetailPage({ params }: Props) {
           />
 
           {/* Trust Guarantees */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-6 border-t border-neutral-100 text-xs text-neutral-600">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-6 border-t border-neutral-100 text-xs text-neutral-600">
             <div className="flex items-center gap-2">
               <Truck className="w-4 h-4 text-black shrink-0" />
               <span>Free delivery over PKR 8,000</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <RotateCcw className="w-4 h-4 text-black shrink-0" />
-              <span>30-day easy returns</span>
             </div>
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-black shrink-0" />

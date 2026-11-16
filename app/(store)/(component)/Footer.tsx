@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Mail, MapPin, Phone, ShieldCheck, Truck, RotateCcw } from "lucide-react";
+import { ArrowRight, Mail, MapPin, Phone, ShieldCheck, Truck } from "lucide-react";
 
 export default function Footer() {
   const [subscribed, setSubscribed] = useState(false);
@@ -20,7 +20,7 @@ export default function Footer() {
     <footer className="w-full bg-neutral-900 text-white rounded-3xl mt-16 overflow-hidden">
       {/* Top Value Proposition Bar */}
       <div className="border-b border-neutral-800 py-8 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6 text-center sm:text-left">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-6 text-center sm:text-left">
           <div className="flex items-center justify-center sm:justify-start gap-4">
             <div className="w-10 h-10 rounded-xl bg-neutral-800 flex items-center justify-center shrink-0">
               <Truck className="w-5 h-5 text-white" />
@@ -28,16 +28,6 @@ export default function Footer() {
             <div>
               <h4 className="font-semibold text-sm">Free Express Shipping</h4>
               <p className="text-xs text-neutral-400 mt-0.5">On all orders over PKR 8,000</p>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-center sm:justify-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-neutral-800 flex items-center justify-center shrink-0">
-              <RotateCcw className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm">30-Day Easy Returns</h4>
-              <p className="text-xs text-neutral-400 mt-0.5">Hassle-free exchanges & returns</p>
             </div>
           </div>
 
@@ -128,9 +118,6 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/contact" className="hover:text-white transition">Shipping & Delivery</Link>
-              </li>
-              <li>
-                <Link href="/contact" className="hover:text-white transition">Returns & Exchanges</Link>
               </li>
             </ul>
           </div>

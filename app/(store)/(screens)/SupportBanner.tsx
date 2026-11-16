@@ -1,4 +1,4 @@
-import { Headset, Lock, RotateCcw, Truck } from "lucide-react";
+import { Headset, Lock, Truck } from "lucide-react";
 import React from "react";
 
 export default function SupportBanner() {
@@ -17,12 +17,6 @@ export default function SupportBanner() {
     },
     {
       id: 3,
-      title: "Easy Returns",
-      subTitle: "30-days return policy",
-      icon: <RotateCcw className="w-6 h-6 md:w-8 md:h-8" />,
-    },
-    {
-      id: 4,
       title: "24/7 Support",
       subTitle: "Always here to help",
       icon: <Headset className="w-6 h-6 md:w-8 md:h-8" />,
@@ -31,7 +25,7 @@ export default function SupportBanner() {
 
   return (
     <div className="w-full border-y border-neutral-200/80 bg-neutral-50/60 py-8 md:py-10 my-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
         {supportItems.map((item) => (
           <div
             key={item.id}

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, Sparkles, ShieldCheck, Truck, RotateCcw } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Sparkles, ShieldCheck, Truck } from "lucide-react";
 import ScreenCategory from "./ScreenCategory";
 import SupportBanner from "./SupportBanner";
 import FeaturedItems from "./FeaturedItems";
@@ -90,10 +90,6 @@ export default function HomePage() {
               <ShieldCheck className="w-4 h-4 text-black shrink-0" />
               <span>Cash on Delivery Available</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <RotateCcw className="w-4 h-4 text-black shrink-0" />
-              <span>7-Day Replacement Guarantee</span>
-            </div>
           </div>
         </div>
 
@@ -152,8 +148,6 @@ export default function HomePage() {
             <span>•</span>
             <span>Smart Living & Tech Innovations</span>
             <span>•</span>
-            <span>7-Day Replacement Guarantee</span>
-            <span>•</span>
             <span>Home & Kitchen Problem Solvers</span>
             <span>•</span>
             <span>Quality Inspected Before Dispatch</span>
@@ -167,8 +161,6 @@ export default function HomePage() {
             <span>Cash on Delivery Across Pakistan</span>
             <span>•</span>
             <span>Smart Living & Tech Innovations</span>
-            <span>•</span>
-            <span>7-Day Replacement Guarantee</span>
             <span>•</span>
             <span>Home & Kitchen Problem Solvers</span>
             <span>•</span>
